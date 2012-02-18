@@ -1,0 +1,6 @@
+*.exe
+*.o
+*.res
+*.log
+*.~rc
+med.lru
