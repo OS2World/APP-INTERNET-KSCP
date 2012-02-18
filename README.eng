@@ -1,0 +1,157 @@
+                                 KSCP v0.1.0
+                                -------------
+                            
+1. Introduction
+---------------
+  
+  This program is SFTP client for OS/2.
+
+2. Development Environment
+--------------------------
+  
+  - OS/2 Warp v4 for Korean with FixPak #15
+  
+  - GCC v3.3.5
+  
+  - OS/2 ToolKit v4.5
+  
+  - GNU Make v3.81r3
+  
+  - rm v3.16
+  
+  - lxlite v1.3.3
+  
+  - git v1.7.3.2 
+      
+3. Requirements
+---------------
+
+  - Runtime : kLIBC v0.6.4, OpenSSL v0.9.8r
+
+4. Test Environment
+--------------------
+
+  This program is tested on OS/2 Warp v4 for Korean with FixPak #15 and
+eComStation 1.2MR.
+
+5. Installation
+---------------
+
+  Put kscp.exe into any directory.
+  
+6. Usage
+--------
+
+6.1 File - Open...
+------------------
+
+  Connect to SFTP server.
+  
+6.2 File - Close
+----------------
+
+  Disconnect to SFTP server.
+
+6.3 File - Download Directory...
+--------------------------------
+     
+  Specify a directory for download. Default is a current directory.
+  
+6.4 File - Exit
+---------------
+
+  KSCP Exit.
+  
+6.5 Popup Menu
+--------------
+
+  Popup menu appears if you press the right button of a mouse.
+  
+6.5.1 Popup - Download
+----------------------
+
+  Download selected files to the specified directory.
+  
+6.5.2 Popup - Upload...
+-----------------------
+
+  Upload selected files to a server.
+    
+7. Limitations/Known bugs
+-----------------------------
+
+  - Support upload/download only
+  
+  - An arbitrary file is selected when a directory is changed
+    
+8. TODOs...
+-----------
+
+  - Support to browse a local directory
+    
+  - Support Drag & Drop
+  
+9. History
+----------
+
+  - v0.1.0 ( 2012/02/18 )
+    .First release
+      
+10. Compilation
+---------------
+
+10.1 Requirements...
+--------------------
+
+  - gcc v3.3.5
+  
+  - OS/2 ToolKit v4.5
+  
+  - GNU Make v3.81r3
+  
+  - libssh2 v1.4.0
+  
+  - OpenSSL v0.9.8r
+  
+  - zlib v1.2.3
+  
+10.2 How to compile
+-------------------
+  
+  Extract src.zip into any directory, then execute the following.
+
+      make
+
+10.3 Download the latest sources
+--------------------------------
+
+  The following git repository is provided,
+  
+      git://github.com/komh/kscp.git
+      
+  To download the sources, do like below.
+    
+      git clone git://github.com/komh/kscp.git
+  
+11. Modules
+-----------
+
+  kscp.exe : The executable of KSCP
+
+12. Donation
+------------
+
+  If you are satisfied with this program and want to donate to me, please visit
+the following URL.
+
+    http://www.ecomstation.co.kr/komh/donate.html
+
+13. Contacts
+------------
+
+  e-mail : komh@chollian.net
+  ICQ    : 124861818
+  MSN    : komh@chollian.net
+  IRC    : lvzuufx, #os2 at HANIRC(irc.hanirc.org)
+               
+KO Myung-Hun
