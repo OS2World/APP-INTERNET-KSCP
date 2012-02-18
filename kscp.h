@@ -41,6 +41,8 @@
 
 #include <os2.h>
 
+#define KSCP_VERSION "0.1.0"
+
 #define ID_KSCP  1
 #define WC_KSCP  "KSCP CLASS"
 
