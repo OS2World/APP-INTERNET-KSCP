@@ -219,17 +219,13 @@ HWND WinDirDlg( HWND hwndP, HWND hwndO, PFILEDLG pfiledlg )
     if( !pfiledlg->pfnDlgProc )
         pfiledlg->pfnDlgProc = DirDialogProc;
 
+    // Remove the trailing back-slash
+    while( len > 0 && pfiledlg->szFullFile[ len - 1 ] == '\\' )
+        len--;
+
     // To prevent from treating the last components of szFullFile as
     // a filename
-    if( pfiledlg->szFullFile[ len - 1 ] != '\\')
-    {
-        strncat( pfiledlg->szFullFile, "\\",
-                 sizeof( pfiledlg->szFullFile) - len - 1 );
-
-        len++;
-    }
-
-    strncat( pfiledlg->szFullFile, "^",
+    strncpy( pfiledlg->szFullFile + len, "\\^",
              sizeof( pfiledlg->szFullFile ) - len - 1 );
 
     hwndDlg = WinFileDlg( hwndP, hwndO, pfiledlg );
