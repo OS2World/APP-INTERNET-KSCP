@@ -143,6 +143,12 @@ MRESULT EXPENTRY DirDialogProc( HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                          swpDirLB.cx+2*SPACING+2*lDlgFrameX,
                          ulCurY+2*lDlgFrameY+lTitleBarY,
                          SWP_MOVE | SWP_SIZE);
+
+         // Give the focus to the directory list box
+         WinPostMsg( hwndDlg, WM_CHAR, MPFROM2SHORT( KC_VIRTUALKEY, 0 ),
+                     MPFROM2SHORT( 0, VK_TAB ));
+         WinPostMsg( hwndDlg, WM_CHAR, MPFROM2SHORT( KC_VIRTUALKEY, 0 ),
+                     MPFROM2SHORT( 0, VK_TAB ));
          }
          break;
       case WM_CONTROL:
