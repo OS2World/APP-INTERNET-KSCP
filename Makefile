@@ -29,11 +29,13 @@ RM = rm -f
 
 all : kscp.exe
 
-kscp.o : kscp.c kscp.h
+kscp.o : kscp.c kscp.h windirdlg.h
+
+windirdlg.o : windirdlg.c windirdlg.h
 
 kscp.res : kscp.rc kscp.h
 
-kscp.exe : kscp.o kscp.res kscp.def
+kscp.exe : kscp.o windirdlg.o kscp.res kscp.def
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(STRIP) $@
 

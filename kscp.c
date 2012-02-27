@@ -60,6 +60,7 @@
 #include <inttypes.h>
 
 #include "kscp.h"
+#include "windirdlg.h"
 
 #ifdef DEBUG
 #define dprintf( ... ) \
@@ -75,7 +76,7 @@ do {\
 
 #define KSCP_PRF_APP               "KSCP"
 #define KSCP_PRF_KEY_DLDIR         "DownloadDir"
-#define KSCP_PRF_KEY_DLDIR_DEFAULT "."
+#define KSCP_PRF_KEY_DLDIR_DEFAULT ""
 
 #define KSCP_TITLE  "KSCP"
 
@@ -550,38 +551,18 @@ static MRESULT wmSize( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 
 static void fileDlDir( PKSCPDATA pkscp )
 {
-    HWND hwndDlg;
+    FILEDLG fd;
 
-    hwndDlg = WinLoadDlg( HWND_DESKTOP, pkscp->hwnd, WinDefDlgProc,
-                          0, IDD_DLDIR, NULL );
+    memset( &fd, 0, sizeof( fd ));
+    fd.pszTitle = "Choose a download directory";
+    strcpy( fd.szFullFile, pkscp->pszDlDir );
 
-    if( hwndDlg )
+    if( WinDirDlg( HWND_DESKTOP, pkscp->hwnd, &fd ) &&
+        fd.lReturn == DID_OK )
     {
-        ULONG ulReply;
+        free( pkscp->pszDlDir );
 
-        WinSendDlgItemMsg( hwndDlg, IDT_DLDIR_DIRNAME, EM_SETTEXTLIMIT,
-                           MPFROMSHORT( 1024 ), 0 );
-
-        WinSetDlgItemText( hwndDlg, IDT_DLDIR_DIRNAME, pkscp->pszDlDir );
-
-        // select the entire text
-        WinSendDlgItemMsg( hwndDlg, IDT_DLDIR_DIRNAME, EM_SETSEL,
-                           MPFROM2SHORT( 0, 1024 ), 0 );
-
-        ulReply = WinProcessDlg( hwndDlg );
-        if( ulReply == DID_OK )
-        {
-            int len;
-
-            free( pkscp->pszDlDir );
-
-            len = WinQueryDlgItemTextLength(hwndDlg, IDT_DLDIR_DIRNAME ) + 1;
-            pkscp->pszDlDir = malloc( len );
-            WinQueryDlgItemText( hwndDlg, IDT_DLDIR_DIRNAME, len,
-                                 pkscp->pszDlDir );
-        }
-
-        WinDestroyWindow( hwndDlg );
+        pkscp->pszDlDir = strdup( fd.szFullFile );
     }
 }
 
