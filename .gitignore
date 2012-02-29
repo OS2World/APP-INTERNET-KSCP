@@ -5,4 +5,6 @@
 *.~rc
 *.~h
 *.d
+*.RWP
+*.bak
 med.lru
