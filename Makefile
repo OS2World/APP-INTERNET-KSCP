@@ -29,15 +29,15 @@ RM = rm -f
 
 all : kscp.exe
 
-kscp.o : kscp.c kscp.h kscp_internal.h windirdlg.h addrbookdlg.h
+kscp.o : kscp.c kscp.h windirdlg.h addrbookdlg.h kscprc.h
 
-windirdlg.o : windirdlg.c windirdlg.h kscp.h kscp_internal.h
+windirdlg.o : windirdlg.c windirdlg.h
 
-addrbookdlg.o : addrbookdlg.c addrbookdlg.h kscp.h kscp_internal.h
+addrbookdlg.o : addrbookdlg.c kscp.h windirdlg.h addrbookdlg.h kscprc.h
 
-kscp.res : kscp.rc kscp.h
+kscp.res : kscprc.rc kscprc.h
 
-kscp.exe : kscp.o windirdlg.o addrbookdlg.o kscp.res kscp.def
+kscp.exe : kscp.o windirdlg.o addrbookdlg.o kscprc.res kscp.def
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(STRIP) $@
 

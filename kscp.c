@@ -60,9 +60,6 @@
 #include <inttypes.h>
 
 #include "kscp.h"
-#include "kscp_internal.h"
-#include "windirdlg.h"
-#include "addrbookdlg.h"
 
 #define KSCP_PRF_KEY_DLDIR         "DownloadDir"
 

@@ -1,4 +1,6 @@
-#include "kscp.h"
+#include <os2.h>
+
+#include "kscprc.h"
 
 MENU ID_KSCP
 BEGIN

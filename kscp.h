@@ -41,38 +41,55 @@
 
 #include <os2.h>
 
+#include <libssh2.h>
+#include <libssh2_sftp.h>
+
+#include "windirdlg.h"
+#include "addrbookdlg.h"
+
+#include "kscprc.h"
+
 #define KSCP_VERSION "0.1.0"
 
-#define ID_KSCP  1
 #define WC_KSCP  "KSCP CLASS"
 
-#define IDM_FILE            100
-#define IDM_FILE_OPEN       101
-#define IDM_FILE_ADDRBOOK   102
-#define IDM_FILE_CLOSE      103
-#define IDM_FILE_DLDIR      104
-#define IDM_FILE_EXIT       105
+#define KSCP_PRF_APP    "KSCP"
 
-#define IDM_KSCP_POPUP      200
-#define IDM_KSCP_DOWNLOAD   201
-#define IDM_KSCP_UPLOAD     202
+#define KSCP_TITLE  "KSCP"
 
-#define IDD_OPEN            1000
-#define IDCB_OPEN_ADDR      1001
-#define IDEF_OPEN_USERNAME  1002
-#define IDEF_OPEN_PASSWORD  1003
+#define IDC_CONTAINER   1
+#define ID_MSGBOX       99
 
-#define IDD_DOWNLOAD            1100
-#define IDT_DOWNLOAD_INDEX      1101
-#define IDT_DOWNLOAD_FILENAME   1102
-#define IDT_DOWNLOAD_STATUS     1103
-#define IDT_DOWNLOAD_SPEED      1104
+typedef struct _KSCPDATA
+{
+    HWND                 hwnd;
+    HWND                 hwndCnr;
+    HWND                 hwndPopup;
+    int                  sock;
+    HMODULE              hmodPMWP;
+    HPOINTER             hptrDefaultFile;
+    HPOINTER             hptrDefaultFolder;
+    HWND                 hwndDlg;
+    LIBSSH2_SESSION     *session;
+    LIBSSH2_SFTP        *sftp_session;
+    char                *pszCurDir;
+    char                *pszDlDir;
+    BOOL                 fBusy;
+    BOOL                 fCanceled;
+} KSCPDATA, *PKSCPDATA;
 
-#define IDD_ADDRBOOK	1200
-#define IDST_ADDRBOOK_SERVERS	1201
-#define IDLB_ADDRBOOK_SERVERS	1202
-#define IDPB_ADDRBOOK_ADD	1203
-#define IDPB_ADDRBOOK_EDIT	1204
-#define IDPB_ADDRBOOK_REMOVE	1205
+#ifdef DEBUG
+#include <stdio.h>
+
+#define dprintf( ... ) \
+do {\
+    FILE *fp;\
+    fp = fopen("kscp.log", "at");\
+    fprintf( fp, __VA_ARGS__ );\
+    fclose( fp );\
+} while( 0 )
+#else
+#define dprintf( ... ) do { } while( 0 )
+#endif
 
 #endif

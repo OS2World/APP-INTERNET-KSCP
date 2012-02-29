@@ -43,8 +43,6 @@
 #include <stdlib.h>
 
 #include "kscp.h"
-#include "kscp_internal.h"
-#include "addrbookdlg.h"
 
 #define KSCP_PRF_KEY_SERVER_COUNT "SERVER_COUNT"
 #define KSCP_PRF_KEY_SERVER_BASE  "SERVER"
