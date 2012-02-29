@@ -60,46 +60,11 @@
 #include <inttypes.h>
 
 #include "kscp.h"
+#include "kscp_internal.h"
 #include "windirdlg.h"
+#include "addrbookdlg.h"
 
-#ifdef DEBUG
-#define dprintf( ... ) \
-do {\
-    FILE *fp;\
-    fp = fopen("kscp.log", "at");\
-    fprintf( fp, __VA_ARGS__ );\
-    fclose( fp );\
-} while( 0 )
-#else
-#define dprintf( ... ) do { } while( 0 )
-#endif
-
-#define KSCP_PRF_APP               "KSCP"
 #define KSCP_PRF_KEY_DLDIR         "DownloadDir"
-#define KSCP_PRF_KEY_DLDIR_DEFAULT ""
-
-#define KSCP_TITLE  "KSCP"
-
-#define IDC_CONTAINER   1
-#define ID_MSGBOX       99
-
-typedef struct _KSCPDATA
-{
-    HWND                 hwnd;
-    HWND                 hwndCnr;
-    HWND                 hwndPopup;
-    int                  sock;
-    HMODULE              hmodPMWP;
-    HPOINTER             hptrDefaultFile;
-    HPOINTER             hptrDefaultFolder;
-    HWND                 hwndDlg;
-    LIBSSH2_SESSION     *session;
-    LIBSSH2_SFTP        *sftp_session;
-    char                *pszCurDir;
-    char                *pszDlDir;
-    BOOL                 fBusy;
-    BOOL                 fCanceled;
-} KSCPDATA, *PKSCPDATA;
 
 static void removeRecordAll( PKSCPDATA pkscp )
 {
@@ -123,7 +88,7 @@ static void removeRecordAll( PKSCPDATA pkscp )
                 MPFROM2SHORT( 0, CMA_REPOSITION ));
 }
 
-static void fileClose( PKSCPDATA pkscp )
+static void kscpDisconnect( PKSCPDATA pkscp )
 {
     if( pkscp->sock == -1 )
         return;
@@ -147,43 +112,6 @@ static void fileClose( PKSCPDATA pkscp )
 
     free( pkscp->pszCurDir );
     pkscp->pszCurDir = NULL;
-}
-
-static BOOL getServerInfo( PKSCPDATA pkscp, char **addr, char **username,
-                           char **password, char **path )
-{
-    HWND  hwndDlg;
-    ULONG ulReply = DID_CANCEL;
-
-    hwndDlg = WinLoadDlg( HWND_DESKTOP, pkscp->hwnd, WinDefDlgProc,
-                          NULLHANDLE, IDD_OPEN, NULL );
-    if( hwndDlg )
-    {
-
-        ulReply = WinProcessDlg( hwndDlg );
-        if( ulReply == DID_OK )
-        {
-            int len;
-
-            len = WinQueryDlgItemTextLength( hwndDlg, IDCB_OPEN_ADDR ) + 1;
-            *addr = malloc( len );
-            WinQueryDlgItemText( hwndDlg, IDCB_OPEN_ADDR, len, *addr );
-
-            len = WinQueryDlgItemTextLength( hwndDlg, IDEF_OPEN_USERNAME ) + 1;
-            *username = malloc( len );
-            WinQueryDlgItemText( hwndDlg, IDEF_OPEN_USERNAME, len, *username );
-
-            len = WinQueryDlgItemTextLength( hwndDlg, IDEF_OPEN_PASSWORD ) + 1;
-            *password = malloc( len );
-            WinQueryDlgItemText( hwndDlg, IDEF_OPEN_PASSWORD, len, *password );
-
-            *path = strdup("/");
-        }
-
-        WinDestroyWindow( hwndDlg );
-    }
-
-    return ( ulReply == DID_OK ) ? TRUE : FALSE;
 }
 
 static SHORT EXPENTRY fileCompare( PRECORDCORE p1, PRECORDCORE p2,
@@ -276,16 +204,12 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
     return TRUE;
 }
 
-static BOOL fileOpen( PKSCPDATA pkscp )
+static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
 {
     struct sockaddr_in sin;
     const char        *fingerprint;
     char               szFingerprint[ 80 ];
     int                auth_pw = 1;
-    char              *addr;
-    char              *username;
-    char              *password;
-    char              *sftppath;
     struct hostent    *host;
     PFIELDINFO         pfi, pfiStart;
     FIELDINFOINSERT    fii;
@@ -294,13 +218,10 @@ static BOOL fileOpen( PKSCPDATA pkscp )
     int                rc;
     RECTL              rcl;
 
-    if( !getServerInfo( pkscp, &addr, &username, &password, &sftppath ))
-        return FALSE;
-
     if( pkscp->sock != -1 )
-        fileClose( pkscp );
+        kscpDisconnect( pkscp );
 
-    pkscp->pszCurDir = strdup( sftppath );
+    pkscp->pszCurDir = strdup( psi->szDir );
 
     /*
      * The application code is responsible for creating the socket
@@ -308,7 +229,7 @@ static BOOL fileOpen( PKSCPDATA pkscp )
      */
     pkscp->sock = socket( AF_INET, SOCK_STREAM, 0 );
 
-    host = gethostbyname( addr );
+    host = gethostbyname( psi->szAddress );
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons( 22 );
@@ -355,7 +276,8 @@ static BOOL fileOpen( PKSCPDATA pkscp )
     if( auth_pw )
     {
         /* We could authenticate via password */
-        if( libssh2_userauth_password( pkscp->session, username, password ))
+        if( libssh2_userauth_password( pkscp->session, psi->szUserName,
+                                       psi->szPassword ))
         {
             printf("Authentication by password failed.\n");
 
@@ -365,10 +287,11 @@ static BOOL fileOpen( PKSCPDATA pkscp )
     else
     {
         /* Or by public key */
-        if( libssh2_userauth_publickey_fromfile( pkscp->session, username,
+        if( libssh2_userauth_publickey_fromfile( pkscp->session,
+                            psi->szUserName,
                             "/home/username/.ssh/id_rsa.pub",
                             "/home/username/.ssh/id_rsa",
-                            password ))
+                            psi->szPassword ))
         {
             printf("\tAuthentication by public key failed\n");
 
@@ -430,7 +353,7 @@ static BOOL fileOpen( PKSCPDATA pkscp )
                 MPFROMLONG( CMA_PSORTRECORD | CMA_FLWINDOWATTR |
                             CMA_SLBITMAPORICON ));
 
-    if( !readDir( pkscp, sftppath ))
+    if( !readDir( pkscp, psi->szDir ))
         goto exit_destroy_window;
 
 
@@ -439,11 +362,6 @@ static BOOL fileOpen( PKSCPDATA pkscp )
                      rcl.xLeft, rcl.yBottom,
                      rcl.xRight - rcl.xLeft, rcl.yTop - rcl.yBottom,
                      SWP_MOVE | SWP_SIZE | SWP_ZORDER | SWP_SHOW );
-
-    free( addr );
-    free( username );
-    free( password );
-    free( sftppath );
 
     return TRUE;
 
@@ -466,11 +384,6 @@ exit_close_socket :
     pkscp->sock = -1;
 
     free( pkscp->pszCurDir );
-
-    free( addr );
-    free( username );
-    free( password );
-    free( sftppath );
 
     return FALSE;
 }
@@ -508,7 +421,7 @@ static MRESULT wmCreate( HWND hwnd, MPARAM mp1, MPARAM mp2 )
     pkscp->hwndPopup = WinLoadMenu( hwnd, 0, IDM_KSCP_POPUP );
 
     PrfQueryProfileString( HINI_USERPROFILE, KSCP_PRF_APP, KSCP_PRF_KEY_DLDIR,
-                           KSCP_PRF_KEY_DLDIR_DEFAULT, szStr, sizeof( szStr ));
+                           "", szStr, sizeof( szStr ));
 
     pkscp->pszDlDir = strdup( szStr );
 
@@ -519,7 +432,7 @@ static MRESULT wmDestroy( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 {
     PKSCPDATA pkscp = WinQueryWindowPtr( hwnd, 0 );
 
-    fileClose( pkscp );
+    kscpDisconnect( pkscp );
 
     PrfWriteProfileString( HINI_USERPROFILE, KSCP_PRF_APP, KSCP_PRF_KEY_DLDIR,
                            pkscp->pszDlDir );
@@ -547,6 +460,41 @@ static MRESULT wmSize( HWND hwnd, MPARAM mp1, MPARAM mp2 )
                      SHORT1FROMMP( mp2 ), SHORT2FROMMP( mp2 ), SWP_SIZE );
 
     return MRFROMLONG( TRUE );
+}
+
+static BOOL fileOpen( PKSCPDATA pkscp )
+{
+    PSERVERINFO psi;
+    ULONG       rc = FALSE;
+
+    psi = calloc( 1, sizeof( *psi ));
+
+    if( getServerInfo( pkscp->hwnd, psi, FALSE ))
+        rc = kscpConnect( pkscp, psi );
+
+    free( psi );
+
+    return rc;
+}
+
+static void fileClose( PKSCPDATA pkscp )
+{
+    kscpDisconnect( pkscp );
+}
+
+static BOOL fileAddrBook( PKSCPDATA pkscp )
+{
+    PSERVERINFO psi;
+    ULONG       rc = FALSE;
+
+    psi = calloc( 1, sizeof( *psi ));
+
+    if( abDlg( pkscp->hwnd, psi ))
+        rc = kscpConnect( pkscp, psi );
+
+    free( psi );
+
+    return rc;
 }
 
 static void fileDlDir( PKSCPDATA pkscp )
@@ -1031,6 +979,10 @@ static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
     {
         case IDM_FILE_OPEN  :
             fileOpen( pkscp );
+            break;
+
+        case IDM_FILE_ADDRBOOK :
+            fileAddrBook( pkscp );
             break;
 
         case IDM_FILE_CLOSE :

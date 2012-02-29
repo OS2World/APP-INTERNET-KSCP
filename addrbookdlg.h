@@ -36,43 +36,20 @@
  * OF SUCH DAMAGE.
  */
 
-#ifndef KSCP_H
-#define KSCP_H
+#ifndef ADDRBOOKDLG_H
+#define ADDRBOOKDLG_H
 
 #include <os2.h>
 
-#define KSCP_VERSION "0.1.0"
+typedef struct _SERVERINFO
+{
+    char szAddress[ 256 ];
+    char szUserName[ 80 ];
+    char szPassword[ 80 ];
+    char szDir[ 512 ];
+} SERVERINFO, *PSERVERINFO;
 
-#define ID_KSCP  1
-#define WC_KSCP  "KSCP CLASS"
-
-#define IDM_FILE            100
-#define IDM_FILE_OPEN       101
-#define IDM_FILE_ADDRBOOK   102
-#define IDM_FILE_CLOSE      103
-#define IDM_FILE_DLDIR      104
-#define IDM_FILE_EXIT       105
-
-#define IDM_KSCP_POPUP      200
-#define IDM_KSCP_DOWNLOAD   201
-#define IDM_KSCP_UPLOAD     202
-
-#define IDD_OPEN            1000
-#define IDCB_OPEN_ADDR      1001
-#define IDEF_OPEN_USERNAME  1002
-#define IDEF_OPEN_PASSWORD  1003
-
-#define IDD_DOWNLOAD            1100
-#define IDT_DOWNLOAD_INDEX      1101
-#define IDT_DOWNLOAD_FILENAME   1102
-#define IDT_DOWNLOAD_STATUS     1103
-#define IDT_DOWNLOAD_SPEED      1104
-
-#define IDD_ADDRBOOK	1200
-#define IDST_ADDRBOOK_SERVERS	1201
-#define IDLB_ADDRBOOK_SERVERS	1202
-#define IDPB_ADDRBOOK_ADD	1203
-#define IDPB_ADDRBOOK_EDIT	1204
-#define IDPB_ADDRBOOK_REMOVE	1205
+BOOL abDlg( HWND, PSERVERINFO );
+BOOL getServerInfo( HWND, PSERVERINFO, BOOL );
 
 #endif
