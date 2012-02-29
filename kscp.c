@@ -995,6 +995,7 @@ static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 
         case IDM_FILE_EXIT  :
             WinPostMsg( hwnd, WM_QUIT, 0, 0 );
+            break;
 
         case IDM_KSCP_DOWNLOAD :
             kscpDownload( pkscp );
