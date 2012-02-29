@@ -39,6 +39,8 @@
 #ifndef KSCPRC_H
 #define KSCPRC_H
 
+#include <os2.h>
+
 #define ID_KSCP  1
 
 #define IDM_FILE            100
