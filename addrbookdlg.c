@@ -181,6 +181,65 @@ static PSERVERINFO silQueryServer( PSERVERINFOLIST psil, LONG lIndex )
     return NULL;
 }
 
+static PSERVERINFOLIST abInitServerList( void )
+{
+    PSERVERINFOLIST psilNew;
+    PSERVERINFO     psi;
+    ULONG           ulBufMax;
+    LONG            lCount;
+    char            szKey[ 10 ];
+    int             i;
+
+    psilNew = silCreate();
+
+    psi = malloc( sizeof( *psi ));
+
+    ulBufMax = sizeof( lCount );
+    if( !PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                              KSCP_PRF_KEY_SERVER_COUNT, &lCount, &ulBufMax ))
+        lCount = 0;
+
+    for( i = 0; i < lCount; i++ )
+    {
+        snprintf( szKey, sizeof( szKey ), "%s%d", KSCP_PRF_KEY_SERVER_BASE,
+                  i );
+
+        ulBufMax = sizeof( *psi );
+        PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey, psi,
+                             &ulBufMax );
+
+        silAdd( psilNew, psi );
+    }
+
+    free( psi );
+
+    return psilNew;
+}
+
+static void abDoneServerList( PSERVERINFOLIST psil )
+{
+    PSERVERINFO     psi;
+    char            szKey[ 10 ];
+    int             i;
+
+    PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                         KSCP_PRF_KEY_SERVER_COUNT, &psil->lCount,
+                         sizeof( psil->lCount ));
+
+    for( i = 0; i < psil->lCount; i++ )
+    {
+        snprintf( szKey, sizeof( szKey ), "%s%d", KSCP_PRF_KEY_SERVER_BASE,
+                  i );
+
+        psi = silQueryServer( psil, i );
+
+        PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey, psi,
+                             sizeof( *psi ));
+    }
+
+    silDestroy( psil );
+}
+
 static MRESULT wmInitDlg( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 {
     PADDRBOOKDLGDATA pabdd;
@@ -203,11 +262,15 @@ static MRESULT wmInitDlg( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 
     WinSetWindowPos( hwndDlg, HWND_TOP, swp.x, swp.y, 0, 0, SWP_MOVE );
 
-    WinSetWindowPtr( hwndDlg, 0, PVOIDFROMMP( mp2 ));
+    pabdd = malloc( sizeof( *pabdd ));
 
-    pabdd = ( PADDRBOOKDLGDATA )mp2;
+    WinSetWindowPtr( hwndDlg, 0, pabdd );
 
     pabdd->hwndDlg = hwndDlg;
+
+    pabdd->psil = abInitServerList();
+
+    pabdd->psiResult = ( PSERVERINFO )mp2;
 
     for( i = 0;; i++ )
     {
@@ -230,12 +293,18 @@ static MRESULT wmInitDlg( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 
 static MRESULT wmDestroy( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 {
+    PADDRBOOKDLGDATA pabdd = WinQueryWindowPtr( hwndDlg, 0 );
+
     BOOL fShow;
 
     fShow = WinQueryButtonCheckstate( hwndDlg, IDCB_ADDRBOOK_SHOW );
 
     PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
                          KSCP_PRF_KEY_SHOW, &fShow, sizeof( fShow ));
+
+    abDoneServerList( pabdd->psil );
+
+    free( pabdd );
 
     return 0;
 }
@@ -394,82 +463,10 @@ static MRESULT EXPENTRY abDlgProc( HWND hwndDlg, ULONG msg, MPARAM mp1,
     return WinDefDlgProc( hwndDlg, msg, mp1, mp2 );
 }
 
-static PSERVERINFOLIST abInitServerList( void )
-{
-    PSERVERINFOLIST psilNew;
-    PSERVERINFO     psi;
-    ULONG           ulBufMax;
-    LONG            lCount;
-    char            szKey[ 10 ];
-    int             i;
-
-    psilNew = silCreate();
-
-    psi = malloc( sizeof( *psi ));
-
-    ulBufMax = sizeof( lCount );
-    if( !PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
-                              KSCP_PRF_KEY_SERVER_COUNT, &lCount, &ulBufMax ))
-        lCount = 0;
-
-    for( i = 0; i < lCount; i++ )
-    {
-        snprintf( szKey, sizeof( szKey ), "%s%d", KSCP_PRF_KEY_SERVER_BASE,
-                  i );
-
-        ulBufMax = sizeof( *psi );
-        PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey, psi,
-                             &ulBufMax );
-
-        silAdd( psilNew, psi );
-    }
-
-    free( psi );
-
-    return psilNew;
-}
-
-static void abDoneServerList( PSERVERINFOLIST psil )
-{
-    PSERVERINFO     psi;
-    char            szKey[ 10 ];
-    int             i;
-
-    PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
-                         KSCP_PRF_KEY_SERVER_COUNT, &psil->lCount,
-                         sizeof( psil->lCount ));
-
-    for( i = 0; i < psil->lCount; i++ )
-    {
-        snprintf( szKey, sizeof( szKey ), "%s%d", KSCP_PRF_KEY_SERVER_BASE,
-                  i );
-
-        psi = silQueryServer( psil, i );
-
-        PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey, psi,
-                             sizeof( *psi ));
-    }
-
-    silDestroy( psil );
-}
-
 BOOL abDlg( HWND hwndO, PSERVERINFO psiResult )
 {
-    PSERVERINFOLIST psil;
-    ADDRBOOKDLGDATA abdd;
-    ULONG           ulResult;
-
-    psil = abInitServerList();
-
-    abdd.psil      = psil;
-    abdd.psiResult = psiResult;
-
-    ulResult = WinDlgBox( HWND_DESKTOP, hwndO, abDlgProc, 0, IDD_ADDRBOOK,
-                          &abdd );
-
-    abDoneServerList( psil );
-
-    return ( ulResult == DID_OK ) ? TRUE : FALSE;
+    return ( WinDlgBox( HWND_DESKTOP, hwndO, abDlgProc, 0, IDD_ADDRBOOK,
+                        psiResult ) == DID_OK ) ? TRUE : FALSE;
 }
 
 BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
