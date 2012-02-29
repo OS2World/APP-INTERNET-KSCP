@@ -1,6 +1,6 @@
 .PHONY : all
 
-.SUFFIXES : .exe .a .lib .o .res .c .h .rc
+.SUFFIXES : .exe .a .lib .o .res .c .h .rc .d
 
 CC      = gcc
 CFLAGS  = -Wall
@@ -21,25 +21,32 @@ RCFLAGS =
 
 RM = rm -f
 
+SRCS = kscp.c addrbookdlg.c windirdlg.c
+DEPS = $(SRCS:.c=.d)
+OBJS = $(SRCS:.c=.o)
+
+ADD_D = sed -e 's/^\(.*\)\.o\(.*\)/\1.o \1.d\2/g'
+
+.c.d :
+	@echo [DEP] $@
+	@$(CC) $(CFLAGS) -MM -MT $(@:.d=.o) $< | $(ADD_D) > $@
+
 .c.o :
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@echo [CC] $@
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 .rc.res :
-	$(RC) $(RCFLAGS) -r $< $@
+	@echo [RC] $@
+	@$(RC) $(RCFLAGS) -r $< $@
 
 all : kscp.exe
 
-kscp.o : kscp.c kscp.h windirdlg.h addrbookdlg.h kscprc.h
-
-windirdlg.o : windirdlg.c windirdlg.h
-
-addrbookdlg.o : addrbookdlg.c kscp.h windirdlg.h addrbookdlg.h kscprc.h
-
 kscp.res : kscprc.rc kscprc.h
 
-kscp.exe : kscp.o windirdlg.o addrbookdlg.o kscprc.res kscp.def
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
-	$(STRIP) $@
+kscp.exe : $(OBJS) kscprc.res kscp.def
+	@echo [LD] $@
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	@$(STRIP) $@
 
 clean :
 	$(RM) *.bak
@@ -47,3 +54,8 @@ clean :
 	$(RM) *.o
 	$(RM) *.res
 	$(RM) *.exe
+	$(RM) *.d
+
+ifeq ($(filter clean, $(MAKECMDGOALS)),)
+-include $(DEPS)
+endif
