@@ -46,6 +46,8 @@
 
 #include "windirdlg.h"
 
+#define UM_SETFOCUS_TO_LB ( WM_USER + 1 )
+
 // KOMH: These codes are excerpted from /widget/os2/nsFilePicker.cpp
 static
 MRESULT EXPENTRY DirDialogProc( HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -145,10 +147,7 @@ MRESULT EXPENTRY DirDialogProc( HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                          SWP_MOVE | SWP_SIZE);
 
          // Give the focus to the directory list box
-         WinPostMsg( hwndDlg, WM_CHAR, MPFROM2SHORT( KC_VIRTUALKEY, 0 ),
-                     MPFROM2SHORT( 0, VK_TAB ));
-         WinPostMsg( hwndDlg, WM_CHAR, MPFROM2SHORT( KC_VIRTUALKEY, 0 ),
-                     MPFROM2SHORT( 0, VK_TAB ));
+         WinPostMsg( hwndDlg, UM_SETFOCUS_TO_LB, 0, 0 );
          }
          break;
       case WM_CONTROL:
@@ -206,6 +205,10 @@ MRESULT EXPENTRY DirDialogProc( HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
          WinSetWindowText(hwndST, szString);
          }
          break;
+      case UM_SETFOCUS_TO_LB :
+         WinSetFocus( HWND_DESKTOP,
+                      WinWindowFromID( hwndDlg, DID_DIRECTORY_LB ));
+         return 0;
    }
    return WinDefFileDlgProc(hwndDlg, msg, mp1, mp2);
 }
