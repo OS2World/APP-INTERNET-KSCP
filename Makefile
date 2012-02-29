@@ -1,4 +1,4 @@
-.PHONY : all
+.PHONY : all clean
 
 .SUFFIXES : .exe .a .lib .o .res .c .h .rc .d
 
@@ -21,29 +21,37 @@ RCFLAGS = -n
 
 RM = rm -f
 
+PROGRAM    = kscp
+PROGRAM_RC = $(PROGRAM)rc
+
 SRCS = kscp.c addrbookdlg.c windirdlg.c
 DEPS = $(SRCS:.c=.d)
 OBJS = $(SRCS:.c=.o)
 
-ADD_D = sed -e 's/^\(.*\)\.o\(.*\)/\1.o \1.d\2/g'
-
-.c.d :
+%.d : %.c
 	@echo [DEP] $@
-	@$(CC) $(CFLAGS) -MM -MT $(@:.d=.o) $< | $(ADD_D) > $@
+	@$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
 
-.c.o :
+%.o : %.c
 	@echo [CC] $@
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-.rc.res :
+%.res : %.rc
 	@echo [RC] $@
 	@$(RC) $(RCFLAGS) -r $< $@
 
-all : kscp.exe
+all : $(PROGRAM).exe
 
-kscp.res : kscprc.rc kscprc.h
+$(PROGRAM_RC)_DEPS  = $(PROGRAM_RC).rc
+$(PROGRAM_RC)_DEPS += $(PROGRAM_RC).h
 
-kscp.exe : $(OBJS) kscprc.res kscp.def
+$(PROGRAM_RC).res : $($(PROGRAM_RC)_DEPS)
+
+$(PROGRAM)_DEPS  = $(OBJS)
+$(PROGRAM)_DEPS += $(PROGRAM_RC).res
+$(PROGRAM)_DEPS += $(PROGRAM).def
+
+$(PROGRAM).exe : $($(PROGRAM)_DEPS)
 	@echo [LD] $@
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 	@$(STRIP) $@
