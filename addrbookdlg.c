@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "kscp.h"
 
@@ -464,11 +465,15 @@ BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
         WinSendDlgItemMsg( hwndDlg, IDEF_OPEN_PASSWORD, EM_SETTEXTLIMIT,
                            MPFROMSHORT( sizeof( psi->szPassword )), 0 );
 
+        WinSendDlgItemMsg( hwndDlg, IDEF_OPEN_DIRECTORY, EM_SETTEXTLIMIT,
+                           MPFROMSHORT( sizeof( psi->szDir )), 0 );
+
         if( fSet )
         {
             WinSetDlgItemText( hwndDlg, IDCB_OPEN_ADDR, psi->szAddress );
             WinSetDlgItemText( hwndDlg, IDEF_OPEN_USERNAME, psi->szUserName );
             WinSetDlgItemText( hwndDlg, IDEF_OPEN_PASSWORD, psi->szPassword );
+            WinSetDlgItemText( hwndDlg, IDEF_OPEN_DIRECTORY, psi->szDir );
         }
 
         ulReply = WinProcessDlg( hwndDlg );
@@ -483,7 +488,10 @@ BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
             WinQueryDlgItemText( hwndDlg, IDEF_OPEN_PASSWORD,
                                  sizeof( psi->szPassword ), psi->szPassword );
 
-            strcpy( psi->szDir, "/");
+            WinQueryDlgItemText( hwndDlg, IDEF_OPEN_DIRECTORY,
+                                 sizeof( psi->szDir ), psi->szDir );
+            if( !psi->szDir[ 0 ])
+                strcpy( psi->szDir, "/");
         }
 
         WinDestroyWindow( hwndDlg );
