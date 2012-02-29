@@ -17,7 +17,7 @@ STRIP    = @echo
 endif
 
 RC = rc
-RCFLAGS =
+RCFLAGS = -n
 
 RM = rm -f
 
