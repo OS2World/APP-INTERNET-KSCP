@@ -191,6 +191,9 @@ static MRESULT wmInitDlg( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
     PSERVERINFO psi;
     int         i;
 
+    BOOL  fShow = FALSE;
+    ULONG ulBufMax;
+
     WinQueryWindowPos( hwndDlg, &swp );
     cxScreen = WinQuerySysValue( HWND_DESKTOP, SV_CXSCREEN );
     cyScreen = WinQuerySysValue( HWND_DESKTOP, SV_CYSCREEN );
@@ -216,7 +219,25 @@ static MRESULT wmInitDlg( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
                            MPFROMSHORT( LIT_END ), MPFROMP( psi->szAddress ));
     }
 
+    ulBufMax = sizeof( fShow );
+    PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                         KSCP_PRF_KEY_SHOW, &fShow, &ulBufMax );
+
+    WinCheckButton( hwndDlg, IDCB_ADDRBOOK_SHOW, fShow );
+
     return MRFROMLONG( FALSE );
+}
+
+static MRESULT wmDestroy( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
+{
+    BOOL fShow;
+
+    fShow = WinQueryButtonCheckstate( hwndDlg, IDCB_ADDRBOOK_SHOW );
+
+    PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                         KSCP_PRF_KEY_SHOW, &fShow, sizeof( fShow ));
+
+    return 0;
 }
 
 static MRESULT wmControl( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
@@ -365,6 +386,7 @@ static MRESULT EXPENTRY abDlgProc( HWND hwndDlg, ULONG msg, MPARAM mp1,
     switch( msg )
     {
         case WM_INITDLG : return wmInitDlg( hwndDlg, mp1, mp2 );
+        case WM_DESTROY : return wmDestroy( hwndDlg, mp1, mp2 );
         case WM_CONTROL : return wmControl( hwndDlg, mp1, mp2 );
         case WM_COMMAND : return wmCommand( hwndDlg, mp1, mp2 );
     }

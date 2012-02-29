@@ -1151,6 +1151,18 @@ int main( void )
 
     if( hwndFrame != NULLHANDLE )
     {
+        BOOL  fShow = FALSE;
+        ULONG ulBufMax;
+
+        ulBufMax = sizeof( fShow );
+
+        PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                             KSCP_PRF_KEY_SHOW, &fShow, &ulBufMax );
+
+        if( fShow )
+            WinPostMsg( hwndClient, WM_COMMAND,
+                        MPFROMSHORT( IDM_FILE_ADDRBOOK ), 0 );
+
         while( WinGetMsg( hab, &qm, NULLHANDLE, 0, 0 ))
             WinDispatchMsg( hab, &qm );
 

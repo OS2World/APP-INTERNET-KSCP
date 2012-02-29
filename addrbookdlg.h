@@ -41,6 +41,8 @@
 
 #include <os2.h>
 
+#define KSCP_PRF_KEY_SHOW   "SHOW"
+
 typedef struct _SERVERINFO
 {
     char szAddress[ 256 ];
