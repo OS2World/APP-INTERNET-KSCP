@@ -3,4 +3,6 @@
 *.res
 *.log
 *.~rc
+*.~h
+*.d
 med.lru
