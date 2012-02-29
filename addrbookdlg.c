@@ -498,6 +498,8 @@ BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
         ulReply = WinProcessDlg( hwndDlg );
         if( ulReply == DID_OK )
         {
+            int len;
+
             WinQueryDlgItemText( hwndDlg, IDCB_OPEN_ADDR,
                                  sizeof( psi->szAddress ), psi->szAddress );
 
@@ -509,8 +511,10 @@ BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
 
             WinQueryDlgItemText( hwndDlg, IDEF_OPEN_DIRECTORY,
                                  sizeof( psi->szDir ), psi->szDir );
-            if( !psi->szDir[ 0 ])
-                strcpy( psi->szDir, "/");
+
+            len = strlen( psi->szDir );
+            if( !len || psi->szDir[ len - 1 ] != '/')
+                strcat( psi->szDir, "/");
         }
 
         WinDestroyWindow( hwndDlg );
