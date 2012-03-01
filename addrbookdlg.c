@@ -186,7 +186,7 @@ static PSERVERINFOLIST abInitServerList( void )
     PSERVERINFOLIST psilNew;
     PSERVERINFO     psi;
     ULONG           ulBufMax;
-    LONG            lCount;
+    LONG            lCount = 0;
     char            szKey[ 10 ];
     int             i;
 
@@ -195,9 +195,8 @@ static PSERVERINFOLIST abInitServerList( void )
     psi = malloc( sizeof( *psi ));
 
     ulBufMax = sizeof( lCount );
-    if( !PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
-                              KSCP_PRF_KEY_SERVER_COUNT, &lCount, &ulBufMax ))
-        lCount = 0;
+    PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                         KSCP_PRF_KEY_SERVER_COUNT, &lCount, &ulBufMax );
 
     for( i = 0; i < lCount; i++ )
     {
