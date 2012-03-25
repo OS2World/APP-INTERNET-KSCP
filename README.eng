@@ -1,4 +1,4 @@
-                                 KSCP v0.1.0
+                                 KSCP v0.2.0
                                 -------------
                             
 1. Introduction
@@ -47,32 +47,37 @@ eComStation 1.2MR.
 
   Connect to SFTP server.
   
-6.2 File - Close
+6.2 File - Address Book...
+--------------------------
+
+  Show the Address Book.
+  
+6.3 File - Close
 ----------------
 
   Disconnect to SFTP server.
 
-6.3 File - Download Directory...
+6.4 File - Download Directory...
 --------------------------------
      
   Specify a directory for download. Default is a current directory.
   
-6.4 File - Exit
+6.5 File - Exit
 ---------------
 
   KSCP Exit.
   
-6.5 Popup Menu
+6.6 Popup Menu
 --------------
 
   Popup menu appears if you press the right button of a mouse.
   
-6.5.1 Popup - Download
+6.6.1 Popup - Download
 ----------------------
 
   Download selected files to the specified directory.
   
-6.5.2 Popup - Upload...
+6.6.2 Popup - Upload...
 -----------------------
 
   Upload selected files to a server.
@@ -90,9 +95,16 @@ eComStation 1.2MR.
   - Support to browse a local directory
     
   - Support Drag & Drop
+
+  - Support public key authentication
   
 9. History
 ----------
+
+  - v0.2.0 ( 2012/03/25 )
+    .Support an address book
+    .Support browsing for a download directory
+    .Suppport an initial directory of a server
 
   - v0.1.0 ( 2012/02/18 )
     .First release
