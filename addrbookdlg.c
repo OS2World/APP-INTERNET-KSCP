@@ -514,6 +514,9 @@ BOOL getServerInfo( HWND hwndO, PSERVERINFO psi, BOOL fSet )
             len = strlen( psi->szDir );
             if( !len || psi->szDir[ len - 1 ] != '/')
                 strcat( psi->szDir, "/");
+
+            if( !psi->szAddress[ 0 ])
+                ulReply = DID_CANCEL;
         }
 
         WinDestroyWindow( hwndDlg );
