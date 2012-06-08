@@ -359,6 +359,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
                      rcl.xLeft, rcl.yBottom,
                      rcl.xRight - rcl.xLeft, rcl.yTop - rcl.yBottom,
                      SWP_MOVE | SWP_SIZE | SWP_ZORDER | SWP_SHOW );
+    WinSetFocus( HWND_DESKTOP, pkscp->hwndCnr );
 
     return TRUE;
 
