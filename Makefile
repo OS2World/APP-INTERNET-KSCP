@@ -4,6 +4,7 @@
 
 CC      = gcc
 CFLAGS  = -Wall
+LD      = gcc
 LDFLAGS =
 LIBS    = -lssh2 -lcrypto -lssl -lz
 
@@ -53,7 +54,7 @@ $(PROGRAM)_DEPS += $(PROGRAM).def
 
 $(PROGRAM).exe : $($(PROGRAM)_DEPS)
 	@echo [LD] $@
-	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	@$(STRIP) $@
 
 clean :
