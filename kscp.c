@@ -136,6 +136,7 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
     LIBSSH2_SFTP_HANDLE *sftp_handle;
     PRECORDCORE          precc;
     RECORDINSERT         ri;
+    ULONG                ulStyle;
     int                  rc;
 
     fprintf( stderr, "libssh2_sftp_opendir()!\n");
@@ -197,6 +198,28 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
 
     WinSendMsg( pkscp->hwndCnr, CM_INVALIDATERECORD, 0,
                 MPFROM2SHORT( 0, CMA_REPOSITION ));
+
+    // Change a selection type to a single selection
+    ulStyle = WinQueryWindowULong( pkscp->hwndCnr, QWL_STYLE );
+    ulStyle &= ~CCS_EXTENDSEL;
+    ulStyle |=  CCS_SINGLESEL;
+    WinSetWindowULong( pkscp->hwndCnr, QWL_STYLE, ulStyle );
+
+    // Select the first item and clear emphasis of other item
+    WinSendMsg( pkscp->hwndCnr, CM_SETRECORDEMPHASIS,
+                WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORD, NULL,
+                            MPFROM2SHORT( CMA_FIRST, CMA_ITEMORDER )),
+                MPFROM2SHORT( TRUE, CRA_CURSORED | CRA_SELECTED ));
+
+    // Change a selection type to a extend selection
+    ulStyle = WinQueryWindowULong( pkscp->hwndCnr, QWL_STYLE );
+    ulStyle &= ~CCS_SINGLESEL;
+    ulStyle |=  CCS_EXTENDSEL;
+    WinSetWindowULong( pkscp->hwndCnr, QWL_STYLE, ulStyle );
+
+    // Scroll to the top
+    WinSendMsg( pkscp->hwndCnr, WM_CHAR,
+                MPFROMSHORT( KC_VIRTUALKEY ), MPFROM2SHORT( 0, VK_HOME ));
 
     return TRUE;
 }
