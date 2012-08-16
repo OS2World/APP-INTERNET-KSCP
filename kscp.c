@@ -166,7 +166,6 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
 
         if( strcmp( mem, ".")) {
             HPOINTER hptrIcon = pkscp->hptrDefaultFile;
-            POINTERINFO pi;
 
             precc = WinSendMsg( pkscp->hwndCnr, CM_ALLOCRECORD, 0,
                                 MPFROMLONG( 1 ));
@@ -175,10 +174,8 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
                LIBSSH2_SFTP_S_ISDIR( attrs.permissions ))
                 hptrIcon = pkscp->hptrDefaultFolder;
 
-            WinQueryPointerInfo( hptrIcon, &pi );
-
             precc->cb            = sizeof( RECORDCORE );
-            precc->hptrIcon      = pi.hbmMiniColor;
+            precc->hptrIcon      = hptrIcon;
             precc->pszName       = strdup( mem );
             precc->pszText       = malloc( sizeof( attrs ));
             memcpy( precc->pszText, &attrs, sizeof( attrs ));
@@ -334,7 +331,8 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
 
     pkscp->hwndCnr = WinCreateWindow( pkscp->hwnd, WC_CONTAINER, NULL,
                                       CCS_AUTOPOSITION | CCS_READONLY |
-                                      CCS_EXTENDSEL, 0, 0, 0, 0,
+                                      CCS_EXTENDSEL | CCS_MINIICONS,
+                                      0, 0, 0, 0,
                                       pkscp->hwnd, HWND_TOP, IDC_CONTAINER,
                                       NULL, NULL );
 
@@ -365,8 +363,9 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
                 MPFROMP( pfiStart ), MPFROMP( &fii ));
 
     ci.pSortRecord  = fileCompare;
-    ci.flWindowAttr = CV_DETAIL | CA_DETAILSVIEWTITLES | CA_DRAWBITMAP;
-    ci.slBitmapOrIcon.cx = WinQuerySysValue( HWND_DESKTOP, SV_CYMENU );
+    ci.flWindowAttr = CV_DETAIL | CA_DETAILSVIEWTITLES | CA_DRAWICON |
+                      CV_MINI;
+    ci.slBitmapOrIcon.cx = 0;
     ci.slBitmapOrIcon.cy = ci.slBitmapOrIcon.cx;
 
     WinSendMsg( pkscp->hwndCnr, CM_SETCNRINFO, MPFROMP( &ci ),
