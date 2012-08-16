@@ -65,19 +65,19 @@
 
 static void removeRecordAll( PKSCPDATA pkscp )
 {
-    PRECORDCORE precc, preccNext;
+    PKSCPRECORD pkr, pkrNext;
 
-    precc = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORD, NULL,
-                        MPFROM2SHORT( CMA_FIRST, CMA_ITEMORDER ));
-    for(; precc; precc = preccNext )
+    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORD, NULL,
+                      MPFROM2SHORT( CMA_FIRST, CMA_ITEMORDER ));
+    for(; pkr; pkr = pkrNext )
     {
-        preccNext = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORD, precc,
-                                MPFROM2SHORT( CMA_NEXT, CMA_ITEMORDER ));
+        pkrNext = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORD, pkr,
+                              MPFROM2SHORT( CMA_NEXT, CMA_ITEMORDER ));
 
-        free( precc->pszName );
-        free( precc->pszText );
+        free( pkr->pszName );
+        free( pkr->pAttr );
 
-        WinSendMsg( pkscp->hwndCnr, CM_REMOVERECORD, &precc,
+        WinSendMsg( pkscp->hwndCnr, CM_REMOVERECORD, &pkr,
                     MPFROM2SHORT( 1, CMA_FREE ));
     }
 
@@ -111,15 +111,15 @@ static void kscpDisconnect( PKSCPDATA pkscp )
     pkscp->pszCurDir = NULL;
 }
 
-static SHORT EXPENTRY fileCompare( PRECORDCORE p1, PRECORDCORE p2,
+static SHORT EXPENTRY fileCompare( PKSCPRECORD p1, PKSCPRECORD p2,
                                    PVOID pStorage )
 {
     LIBSSH2_SFTP_ATTRIBUTES *pattr1, *pattr2;
 
     int rc;
 
-    pattr1 = ( LIBSSH2_SFTP_ATTRIBUTES * )p1->pszText;
-    pattr2 = ( LIBSSH2_SFTP_ATTRIBUTES * )p2->pszText;
+    pattr1 = ( LIBSSH2_SFTP_ATTRIBUTES * )p1->pAttr;
+    pattr2 = ( LIBSSH2_SFTP_ATTRIBUTES * )p2->pAttr;
 
     // directory first
     rc = LIBSSH2_SFTP_S_ISDIR( pattr2->permissions ) -
@@ -134,7 +134,7 @@ static SHORT EXPENTRY fileCompare( PRECORDCORE p1, PRECORDCORE p2,
 static BOOL readDir( PKSCPDATA pkscp, const char *dir )
 {
     LIBSSH2_SFTP_HANDLE *sftp_handle;
-    PRECORDCORE          precc;
+    PKSCPRECORD          pkr;
     RECORDINSERT         ri;
     ULONG                ulStyle;
     int                  rc;
@@ -167,18 +167,20 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
         if( strcmp( mem, ".")) {
             HPOINTER hptrIcon = pkscp->hptrDefaultFile;
 
-            precc = WinSendMsg( pkscp->hwndCnr, CM_ALLOCRECORD, 0,
-                                MPFROMLONG( 1 ));
+            pkr = WinSendMsg( pkscp->hwndCnr, CM_ALLOCRECORD,
+                              MPFROMLONG( CB_EXTRA_KSCPRECORD ),
+                              MPFROMLONG( 1 ));
 
             if(( attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS ) &&
                LIBSSH2_SFTP_S_ISDIR( attrs.permissions ))
                 hptrIcon = pkscp->hptrDefaultFolder;
 
-            precc->cb            = sizeof( RECORDCORE );
-            precc->hptrIcon      = hptrIcon;
-            precc->pszName       = strdup( mem );
-            precc->pszText       = malloc( sizeof( attrs ));
-            memcpy( precc->pszText, &attrs, sizeof( attrs ));
+            pkr->pszName       = strdup( mem );
+            pkr->pAttr         = malloc( sizeof( attrs ));
+            memcpy( pkr->pAttr, &attrs, sizeof( attrs ));
+            //pkr->mrc.cb        = sizeof( KSCPRECORD );
+            pkr->mrc.hptrIcon  = hptrIcon;
+            pkr->mrc.pszIcon   = pkr->pszName;
 
             ri.cb                = sizeof( RECORDINSERT );
             ri.pRecordOrder      = ( PRECORDCORE )CMA_END;
@@ -187,7 +189,7 @@ static BOOL readDir( PKSCPDATA pkscp, const char *dir )
             ri.fInvalidateRecord = FALSE;
             ri.cRecordsInsert    = 1;
 
-            WinSendMsg( pkscp->hwndCnr, CM_INSERTRECORD, precc, &ri );
+            WinSendMsg( pkscp->hwndCnr, CM_INSERTRECORD, pkr, &ri );
         }
     }
 
@@ -331,7 +333,8 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
 
     pkscp->hwndCnr = WinCreateWindow( pkscp->hwnd, WC_CONTAINER, NULL,
                                       CCS_AUTOPOSITION | CCS_READONLY |
-                                      CCS_EXTENDSEL | CCS_MINIICONS,
+                                      CCS_EXTENDSEL | CCS_MINIRECORDCORE |
+                                      CCS_MINIICONS,
                                       0, 0, 0, 0,
                                       pkscp->hwnd, HWND_TOP, IDC_CONTAINER,
                                       NULL, NULL );
@@ -344,7 +347,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
                       CFA_SEPARATOR;
     pfi->flTitle    = CFA_CENTER;
     pfi->pTitleData = "Icon";
-    pfi->offStruct  = FIELDOFFSET(RECORDCORE, hptrIcon );
+    pfi->offStruct  = FIELDOFFSET(KSCPRECORD, mrc.hptrIcon );
     pfi             = pfi->pNextFieldInfo;
 
     pfi->cb         = sizeof( FIELDINFO );
@@ -352,7 +355,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
                       CFA_SEPARATOR;
     pfi->flTitle    = CFA_CENTER;
     pfi->pTitleData = "Name";
-    pfi->offStruct  = FIELDOFFSET(RECORDCORE, pszName);
+    pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszName);
 
     fii.cb                   = ( ULONG )( sizeof( FIELDINFOINSERT ));
     fii.pFieldInfoOrder      = (PFIELDINFO)CMA_FIRST;
@@ -374,7 +377,6 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
 
     if( !readDir( pkscp, psi->szDir ))
         goto exit_destroy_window;
-
 
     WinQueryWindowRect( pkscp->hwnd, &rcl );
     WinSetWindowPos( pkscp->hwndCnr, HWND_TOP,
@@ -536,7 +538,7 @@ static void fileDlDir( PKSCPDATA pkscp )
 
 #define BUF_SIZE    ( 1024 * 4 )
 
-static int download( PKSCPDATA pkscp, PRECORDCORE precc )
+static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
 {
     LIBSSH2_SFTP_HANDLE     *sftp_handle;
     char                     sftppath[ 512 ];
@@ -551,7 +553,7 @@ static int download( PKSCPDATA pkscp, PRECORDCORE precc )
     long long      diffTime;
 
     snprintf( sftppath, sizeof( sftppath ), "%s%s",
-              pkscp->pszCurDir, precc->pszName );
+              pkscp->pszCurDir, pkr->pszName );
     sftp_handle = libssh2_sftp_open( pkscp->sftp_session, sftppath,
                                      LIBSSH2_FXF_READ, 0 );
     if( !sftp_handle )
@@ -564,10 +566,10 @@ static int download( PKSCPDATA pkscp, PRECORDCORE precc )
         return 1;
     }
 
-    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )precc->pszText;
+    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
 
     buf = malloc( BUF_SIZE );
-    _makepath( buf, NULL, pkscp->pszDlDir, precc->pszName, NULL );
+    _makepath( buf, NULL, pkscp->pszDlDir, pkr->pszName, NULL );
 
     fp = fopen( buf, "wb");
 
@@ -619,24 +621,23 @@ static int download( PKSCPDATA pkscp, PRECORDCORE precc )
 
 static int checkDlFiles( PKSCPDATA pkscp )
 {
-    PRECORDCORE precc;
+    PKSCPRECORD pkr;
     int         count;
 
     LIBSSH2_SFTP_ATTRIBUTES *pattr;
 
-    precc = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                        MPFROMLONG( CMA_FIRST ),
-                        MPFROMLONG( CRA_SELECTED ));
+    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                      MPFROMLONG( CMA_FIRST ),
+                      MPFROMLONG( CRA_SELECTED ));
 
-    for( count = 0; precc; )
+    for( count = 0; pkr; )
     {
-        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )precc->pszText;
+        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
             count++;
 
-        precc = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                            MPFROMP( precc ),
-                            MPFROMLONG( CRA_SELECTED ));
+        pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                          MPFROMP( pkr ), MPFROMLONG( CRA_SELECTED ));
     }
 
     return count;
@@ -649,7 +650,7 @@ static void downloadThread( void *arg )
     HAB hab;
     HMQ hmq;
 
-    PRECORDCORE precc;
+    PKSCPRECORD pkr;
 
     LIBSSH2_SFTP_ATTRIBUTES *pattr;
 
@@ -665,13 +666,12 @@ static void downloadThread( void *arg )
 
     count = checkDlFiles( pkscp );
 
-    precc = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                        MPFROMLONG( CMA_FIRST ),
-                        MPFROMLONG( CRA_SELECTED ));
+    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
 
-    for( i = 0; precc && !pkscp->fCanceled;  )
+    for( i = 0; pkr && !pkscp->fCanceled;  )
     {
-        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )precc->pszText;
+        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
         {
             i++;
@@ -679,14 +679,14 @@ static void downloadThread( void *arg )
             WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
                                szMsg );
             WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
-                               precc->pszName );
+                               pkr->pszName );
 
-            download( pkscp, precc );
+            download( pkscp, pkr );
         }
 
-        precc = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                            MPFROMP( precc ),
-                            MPFROMLONG( CRA_SELECTED ));
+        pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                          MPFROMP( pkr ),
+                          MPFROMLONG( CRA_SELECTED ));
     }
 
     WinDismissDlg( pkscp->hwndDlg, pkscp->fCanceled ? DID_CANCEL : DID_OK );
@@ -1043,17 +1043,17 @@ static MRESULT wmPaint( HWND hwnd, MPARAM mp1, MPARAM mp2 )
     return 0;
 }
 
-static void processEnter( PKSCPDATA pkscp, PRECORDCORE precc )
+static void processEnter( PKSCPDATA pkscp, PKSCPRECORD pkr )
 {
     LIBSSH2_SFTP_ATTRIBUTES *pattr;
 
-    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )precc->pszText;
+    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
     if( LIBSSH2_SFTP_S_ISDIR( pattr->permissions ))
     {
         char *pszNewDir = NULL;
 
-        if( strcmp( precc->pszName, ".."))
-            asprintf( &pszNewDir, "%s%s/", pkscp->pszCurDir, precc->pszName );
+        if( strcmp( pkr->pszName, ".."))
+            asprintf( &pszNewDir, "%s%s/", pkscp->pszCurDir, pkr->pszName );
         else if( pkscp->pszCurDir[ 1 ]) // not root ?
         {
             // remove the last '/'
@@ -1109,7 +1109,8 @@ static MRESULT wmControl( HWND hwnd, MPARAM mp1, MPARAM mp2 )
         case CN_ENTER :
             // pRecord is NULL if a heading of container is double-clicked
             if((( PNOTIFYRECORDENTER)mp2 )->pRecord )
-                processEnter( pkscp, (( PNOTIFYRECORDENTER)mp2 )->pRecord );
+                processEnter( pkscp, ( PKSCPRECORD )
+                                     (( PNOTIFYRECORDENTER)mp2 )->pRecord );
 
             break;
     }

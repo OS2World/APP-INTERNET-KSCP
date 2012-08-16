@@ -78,6 +78,16 @@ typedef struct _KSCPDATA
     BOOL                 fCanceled;
 } KSCPDATA, *PKSCPDATA;
 
+typedef struct _KSCPRECORD
+{
+    MINIRECORDCORE mrc;
+    PSZ            pszName;
+    PVOID          pAttr;
+} KSCPRECORD, *PKSCPRECORD;
+
+#define CB_EXTRA_KSCPRECORD \
+    ( sizeof( KSCPRECORD ) - sizeof( MINIRECORDCORE ))
+
 #ifdef DEBUG
 #include <stdio.h>
 
