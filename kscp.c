@@ -543,6 +543,7 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
     char                     sftppath[ 512 ];
     LIBSSH2_SFTP_ATTRIBUTES *pattr;
 
+    struct stat       statbuf;
     FILE             *fp;
     char             *buf;
     libssh2_uint64_t  size;
@@ -550,6 +551,8 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
 
     struct timeval tv1, tv2;
     long long      diffTime;
+
+    int rc = 1;
 
     snprintf( sftppath, sizeof( sftppath ), "%s%s",
               pkscp->pszCurDir, pkr->pszName );
@@ -562,13 +565,27 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
         WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Open", ID_MSGBOX,
                        MB_OK | MB_ERROR );
 
-        return 1;
+        return rc;
     }
 
     pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
 
     buf = malloc( BUF_SIZE );
     _makepath( buf, NULL, pkscp->pszDlDir, pkr->pszName, NULL );
+
+    if( !stat( buf, &statbuf ))
+    {
+        ULONG ulReply;
+
+        snprintf( szMsg, sizeof( szMsg ),
+                  "%s\nalready exists. Overwrite ?", buf );
+
+        ulReply = WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Download",
+                                 ID_MSGBOX, MB_YESNO | MB_ICONQUESTION );
+
+        if( ulReply == MBID_NO )
+            goto exit_free;
+    }
 
     fp = fopen( buf, "wb");
 
@@ -611,11 +628,14 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
 
     fclose( fp );
 
+    rc = 0;
+
+exit_free:
     free( buf );
 
     libssh2_sftp_close( sftp_handle );
 
-    return 0;
+    return rc;
 }
 
 static PKSCPRECORD findRecord( PKSCPDATA pkscp, PKSCPRECORD pkrStart,
@@ -756,8 +776,9 @@ static int kscpDownload( PKSCPDATA pkscp )
 
 static int upload( PKSCPDATA pkscp, const char *pszName )
 {
-    LIBSSH2_SFTP_HANDLE *sftp_handle;
-    char                 sftppath[ 512 ];
+    LIBSSH2_SFTP_HANDLE    *sftp_handle;
+    char                    sftppath[ 512 ];
+    LIBSSH2_SFTP_ATTRIBUTES sftp_attrs;
 
     FILE *fp;
     off_t size, fileSize;
@@ -799,6 +820,21 @@ static int upload( PKSCPDATA pkscp, const char *pszName )
 
     snprintf( sftppath, sizeof( sftppath ), "%s%s",
               pkscp->pszCurDir, strrchr( pszName, '\\') + 1 );
+
+    if( !libssh2_sftp_stat( pkscp->sftp_session, sftppath, &sftp_attrs ))
+    {
+        ULONG ulReply;
+
+        snprintf( szMsg, sizeof( szMsg ),
+                  "%s\nalready exists. Overwrite ?", sftppath );
+
+        ulReply = WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Upload",
+                                 ID_MSGBOX, MB_YESNO | MB_ICONQUESTION );
+
+        if( ulReply == MBID_NO )
+            goto exit_fclose;
+    }
+
     sftp_handle = libssh2_sftp_open( pkscp->sftp_session, sftppath,
                                      LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT,
                                      LIBSSH2_SFTP_S_IRUSR |
