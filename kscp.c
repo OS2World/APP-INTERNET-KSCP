@@ -1334,7 +1334,7 @@ static MRESULT processDirectEdit( PKSCPDATA pkscp, MPARAM mp1, MPARAM mp2 )
     switch( SHORT2FROMMP( mp1 ))
     {
         case CN_BEGINEDIT :
-            if( !strcmp( pkr->pszName, ".") || !strcmp( pkr->pszName, ".."))
+            if( !strcmp( pkr->pszName, ".."))
                 WinPostMsg( pkscp->hwndCnr, CM_CLOSEEDIT, 0, 0 );
             break;
 
