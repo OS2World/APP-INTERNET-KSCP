@@ -991,6 +991,140 @@ static int kscpUpload( PKSCPDATA pkscp )
     return 0;
 }
 
+static int delete( PKSCPDATA pkscp, PKSCPRECORD pkr )
+{
+    char sftppath[ 512 ];
+    char szMsg[ 512 ];
+
+    snprintf( sftppath, sizeof( sftppath ), "%s%s",
+              pkscp->pszCurDir, pkr->pszName );
+
+    if( libssh2_sftp_unlink( pkscp->sftp_session, sftppath ))
+    {
+        snprintf( szMsg, sizeof( szMsg ), "Cannot delete %s", sftppath );
+
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Delete", ID_MSGBOX,
+                       MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    return 0;
+}
+
+static void deleteThread( void *arg )
+{
+    PKSCPDATA   pkscp = ( PKSCPDATA )arg;
+
+    HAB hab;
+    HMQ hmq;
+
+    PKSCPRECORD pkr;
+
+    LIBSSH2_SFTP_ATTRIBUTES *pattr;
+
+    char szMsg[ 100 ];
+    int  count;
+    int  i;
+
+    pkscp->fBusy = TRUE;
+
+    // to use WinSendMsg()
+    hab = WinInitialize( 0 );
+    hmq = WinCreateMsgQueue( hab, 0);
+
+    count = checkDlFiles( pkscp );
+
+    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
+
+    for( i = 0; pkr && !pkscp->fCanceled;  )
+    {
+        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
+        if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
+        {
+            i++;
+            sprintf( szMsg, "%d of %d", i, count );
+            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
+                               szMsg );
+            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
+                               pkr->pszName );
+
+            delete( pkscp, pkr );
+        }
+
+        pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                          MPFROMP( pkr ),
+                          MPFROMLONG( CRA_SELECTED ));
+    }
+
+    WinDismissDlg( pkscp->hwndDlg, pkscp->fCanceled ? DID_CANCEL : DID_OK );
+
+    WinDestroyMsgQueue( hmq );
+    WinTerminate( hab );
+
+    pkscp->fBusy = FALSE;
+}
+
+static int kscpDelete( PKSCPDATA pkscp )
+{
+    TID   tid;
+    char  szMsg[ 100 ];
+    ULONG ulReply;
+
+    if( pkscp->fBusy )
+    {
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Session is busy\nTry again, later", "Delete",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    if( !checkDlFiles( pkscp ))
+    {
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Files not selected", "Delete",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    if( WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Are you sure to delete ?", "Delete",
+                       ID_MSGBOX, MB_YESNO | MB_ICONQUESTION ) == MBID_NO )
+        return 1;
+
+    pkscp->fCanceled = FALSE;
+
+    pkscp->hwndDlg = WinLoadDlg( HWND_DESKTOP, pkscp->hwnd, WinDefDlgProc,
+                                 0, IDD_DOWNLOAD, pkscp );
+
+    WinSetWindowText( pkscp->hwndDlg, "Delete");
+    WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_STATUS, "");
+    WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_SPEED, "");
+
+    tid = _beginthread( deleteThread, NULL, 1024 * 1024, pkscp );
+
+    ulReply = WinProcessDlg( pkscp->hwndDlg );
+    if( ulReply == DID_CANCEL )
+        pkscp->fCanceled = TRUE;
+
+    WinDestroyWindow( pkscp->hwndDlg );
+
+    pkscp->hwndDlg = NULLHANDLE;
+
+    sprintf( szMsg, "Delete %s",
+             ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+
+    WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Delete",
+                   ID_MSGBOX, MB_OK | MB_INFORMATION );
+
+    refresh( pkscp );
+
+    return 0;
+}
+
 static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 {
     PKSCPDATA pkscp = WinQueryWindowPtr( hwnd, 0 );
@@ -1023,6 +1157,10 @@ static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 
         case IDM_KSCP_UPLOAD :
             kscpUpload( pkscp );
+            break;
+
+        case IDM_KSCP_DELETE :
+            kscpDelete( pkscp );
             break;
     }
 

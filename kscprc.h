@@ -53,6 +53,7 @@
 #define IDM_KSCP_POPUP      200
 #define IDM_KSCP_DOWNLOAD   201
 #define IDM_KSCP_UPLOAD     202
+#define IDM_KSCP_DELETE     210
 
 #define IDD_OPEN            1000
 #define IDCB_OPEN_ADDR      1001
