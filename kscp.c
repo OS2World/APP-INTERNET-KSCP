@@ -618,28 +618,45 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
     return 0;
 }
 
-static int checkSelectedRecords( PKSCPDATA pkscp, BOOL fWithDir )
+static PKSCPRECORD findRecord( PKSCPDATA pkscp, PKSCPRECORD pkrStart,
+                               ULONG ulEM, BOOL fWithDir )
 {
     PKSCPRECORD pkr;
-    int         count;
 
     LIBSSH2_SFTP_ATTRIBUTES *pattr;
 
     pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                      MPFROMLONG( CMA_FIRST ),
-                      MPFROMLONG( CRA_SELECTED ));
+                      pkrStart ? pkrStart : MPFROMLONG( CMA_FIRST ),
+                      MPFROMLONG( ulEM ));
 
-    for( count = 0; pkr; )
+    while( pkr )
     {
         pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
-            count++;
+            break;
         else if( fWithDir && LIBSSH2_SFTP_S_ISDIR( pattr->permissions ) &&
                  strcmp( pkr->pszName, ".."))
-            count++;
+            break;
 
         pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                          MPFROMP( pkr ), MPFROMLONG( CRA_SELECTED ));
+                          MPFROMP( pkr ), MPFROMLONG( ulEM ));
+    }
+
+    return pkr;
+}
+
+static int countRecords( PKSCPDATA pkscp, ULONG ulEM, BOOL fWithDir )
+{
+    PKSCPRECORD pkr;
+    int         count;
+
+    for( pkr = NULL, count = 0;;)
+    {
+        pkr = findRecord( pkscp, pkr, ulEM, fWithDir );
+        if( !pkr )
+            break;
+
+        count++;
     }
 
     return count;
@@ -654,8 +671,6 @@ static void downloadThread( void *arg )
 
     PKSCPRECORD pkr;
 
-    LIBSSH2_SFTP_ATTRIBUTES *pattr;
-
     char szMsg[ 100 ];
     int  count;
     int  i;
@@ -666,29 +681,21 @@ static void downloadThread( void *arg )
     hab = WinInitialize( 0 );
     hmq = WinCreateMsgQueue( hab, 0);
 
-    count = checkSelectedRecords( pkscp, FALSE );
+    count = countRecords( pkscp, CRA_SELECTED, FALSE );
 
-    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
-
-    for( i = 0; pkr && !pkscp->fCanceled;  )
+    for( i = 1, pkr = NULL; !pkscp->fCanceled; i++ )
     {
-        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
-        if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
-        {
-            i++;
-            sprintf( szMsg, "%d of %d", i, count );
-            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
-                               szMsg );
-            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
-                               pkr->pszName );
+        pkr = findRecord( pkscp, pkr, CRA_SELECTED, FALSE );
+        if( !pkr )
+            break;
 
-            download( pkscp, pkr );
-        }
+        sprintf( szMsg, "%d of %d", i, count );
+        WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
+                           szMsg );
+        WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
+                           pkr->pszName );
 
-        pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                          MPFROMP( pkr ),
-                          MPFROMLONG( CRA_SELECTED ));
+        download( pkscp, pkr );
     }
 
     WinDismissDlg( pkscp->hwndDlg, pkscp->fCanceled ? DID_CANCEL : DID_OK );
@@ -714,7 +721,7 @@ static int kscpDownload( PKSCPDATA pkscp )
         return 1;
     }
 
-    if( !checkSelectedRecords( pkscp, FALSE ))
+    if( !countRecords( pkscp, CRA_SELECTED, FALSE ))
     {
         WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
                        "Files not selected", "Download",
@@ -1023,8 +1030,6 @@ static void deleteThread( void *arg )
 
     PKSCPRECORD pkr;
 
-    LIBSSH2_SFTP_ATTRIBUTES *pattr;
-
     char szMsg[ 100 ];
     int  count;
     int  i;
@@ -1035,29 +1040,21 @@ static void deleteThread( void *arg )
     hab = WinInitialize( 0 );
     hmq = WinCreateMsgQueue( hab, 0);
 
-    count = checkSelectedRecords( pkscp, FALSE );
+    count = countRecords( pkscp, CRA_SELECTED, FALSE );
 
-    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
-
-    for( i = 0; pkr && !pkscp->fCanceled;  )
+    for( i = 1, pkr = NULL; !pkscp->fCanceled; i++ )
     {
-        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
-        if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
-        {
-            i++;
-            sprintf( szMsg, "%d of %d", i, count );
-            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
-                               szMsg );
-            WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
-                               pkr->pszName );
+        pkr = findRecord( pkscp, pkr, CRA_SELECTED, FALSE );
+        if( !pkr )
+            break;
 
-            delete( pkscp, pkr );
-        }
+        sprintf( szMsg, "%d of %d", i, count );
+        WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_INDEX,
+                           szMsg );
+        WinSetDlgItemText( pkscp->hwndDlg, IDT_DOWNLOAD_FILENAME,
+                           pkr->pszName );
 
-        pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                          MPFROMP( pkr ),
-                          MPFROMLONG( CRA_SELECTED ));
+        delete( pkscp, pkr );
     }
 
     WinDismissDlg( pkscp->hwndDlg, pkscp->fCanceled ? DID_CANCEL : DID_OK );
@@ -1083,7 +1080,7 @@ static int kscpDelete( PKSCPDATA pkscp )
         return 1;
     }
 
-    if( !checkSelectedRecords( pkscp, FALSE ))
+    if( !countRecords( pkscp, CRA_SELECTED, FALSE ))
     {
         WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
                        "Files not selected", "Delete",
@@ -1179,7 +1176,7 @@ static int kscpRename( PKSCPDATA pkscp )
         return 1;
     }
 
-    count = checkSelectedRecords( pkscp, TRUE );
+    count = countRecords( pkscp, CRA_SELECTED, TRUE );
 
     if( count == 0 )
     {
@@ -1189,23 +1186,15 @@ static int kscpRename( PKSCPDATA pkscp )
 
         return 1;
     }
-    else if( count > 1 )
-    {
-        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
-                       "Please select only 1 file", "Rename",
-                       ID_MSGBOX, MB_OK | MB_ERROR );
 
-        return 1;
-    }
-
-    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
-                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
+    pkr = findRecord( pkscp, NULL, CRA_SELECTED, TRUE );
 
     pfi = WinSendMsg( pkscp->hwndCnr, CM_QUERYDETAILFIELDINFO, 0,
                       MPFROMLONG( CMA_FIRST ));
+
     while( pfi && pfi->offStruct != FIELDOFFSET( KSCPRECORD, pszName ))
-      pfi = WinSendMsg( pkscp->hwndCnr, CM_QUERYDETAILFIELDINFO, pfi,
-                        MPFROMLONG( CMA_NEXT ));
+        pfi = WinSendMsg( pkscp->hwndCnr, CM_QUERYDETAILFIELDINFO, pfi,
+                          MPFROMLONG( CMA_NEXT ));
 
     memset( &ced, 0, sizeof( ced ));
     ced.cb         = sizeof( ced );
