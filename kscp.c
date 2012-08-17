@@ -618,7 +618,7 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
     return 0;
 }
 
-static int checkDlFiles( PKSCPDATA pkscp )
+static int checkSelectedRecords( PKSCPDATA pkscp, BOOL fWithDir )
 {
     PKSCPRECORD pkr;
     int         count;
@@ -633,6 +633,9 @@ static int checkDlFiles( PKSCPDATA pkscp )
     {
         pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
+            count++;
+        else if( fWithDir && LIBSSH2_SFTP_S_ISDIR( pattr->permissions ) &&
+                 strcmp( pkr->pszName, ".."))
             count++;
 
         pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
@@ -663,7 +666,7 @@ static void downloadThread( void *arg )
     hab = WinInitialize( 0 );
     hmq = WinCreateMsgQueue( hab, 0);
 
-    count = checkDlFiles( pkscp );
+    count = checkSelectedRecords( pkscp, FALSE );
 
     pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
                       MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
@@ -711,7 +714,7 @@ static int kscpDownload( PKSCPDATA pkscp )
         return 1;
     }
 
-    if( !checkDlFiles( pkscp ))
+    if( !checkSelectedRecords( pkscp, FALSE ))
     {
         WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
                        "Files not selected", "Download",
@@ -1032,7 +1035,7 @@ static void deleteThread( void *arg )
     hab = WinInitialize( 0 );
     hmq = WinCreateMsgQueue( hab, 0);
 
-    count = checkDlFiles( pkscp );
+    count = checkSelectedRecords( pkscp, FALSE );
 
     pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
                       MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
@@ -1080,7 +1083,7 @@ static int kscpDelete( PKSCPDATA pkscp )
         return 1;
     }
 
-    if( !checkDlFiles( pkscp ))
+    if( !checkSelectedRecords( pkscp, FALSE ))
     {
         WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
                        "Files not selected", "Delete",
@@ -1176,7 +1179,7 @@ static int kscpRename( PKSCPDATA pkscp )
         return 1;
     }
 
-    count = checkDlFiles( pkscp );
+    count = checkSelectedRecords( pkscp, TRUE );
 
     if( count == 0 )
     {
