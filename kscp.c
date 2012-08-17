@@ -588,6 +588,15 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
     }
 
     fp = fopen( buf, "wb");
+    if( !fp )
+    {
+        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s", buf );
+
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Download",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        goto exit_free;
+    }
 
     if( pattr->filesize )
     {
