@@ -562,7 +562,7 @@ static int download( PKSCPDATA pkscp, PKSCPRECORD pkr )
     {
         snprintf( szMsg, sizeof( szMsg ), "Cannot open %s", sftppath );
 
-        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Open", ID_MSGBOX,
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Download", ID_MSGBOX,
                        MB_OK | MB_ERROR );
 
         return rc;
