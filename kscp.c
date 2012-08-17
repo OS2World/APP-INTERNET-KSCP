@@ -845,7 +845,8 @@ static int upload( PKSCPDATA pkscp, const char *pszName )
     }
 
     sftp_handle = libssh2_sftp_open( pkscp->sftp_session, sftppath,
-                                     LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT,
+                                     LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT |
+                                     LIBSSH2_FXF_TRUNC,
                                      LIBSSH2_SFTP_S_IRUSR |
                                      LIBSSH2_SFTP_S_IWUSR |
                                      LIBSSH2_SFTP_S_IRGRP |
