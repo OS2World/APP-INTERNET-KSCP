@@ -310,7 +310,10 @@ static MRESULT wmDestroy( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 
 static MRESULT wmControl( HWND hwndDlg, MPARAM mp1, MPARAM mp2 )
 {
-    if( SHORT2FROMMP( mp1 ) == LN_ENTER )
+    HWND hwndLB = WinWindowFromID( hwndDlg, IDLB_ADDRBOOK_SERVERS );
+
+    if( SHORT2FROMMP( mp1 ) == LN_ENTER &&
+        WinQueryLboxSelectedItem( hwndLB ) >= 0 )
         WinPostMsg( hwndDlg, WM_COMMAND, MPFROMSHORT( DID_OK ), 0 );
 
     return 0;
