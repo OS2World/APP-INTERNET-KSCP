@@ -332,9 +332,8 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     libssh2_session_set_blocking( pkscp->session, 1 );
 
     pkscp->hwndCnr = WinCreateWindow( pkscp->hwnd, WC_CONTAINER, NULL,
-                                      CCS_AUTOPOSITION | CCS_READONLY |
-                                      CCS_EXTENDSEL | CCS_MINIRECORDCORE |
-                                      CCS_MINIICONS,
+                                      CCS_AUTOPOSITION | CCS_EXTENDSEL |
+                                      CCS_MINIRECORDCORE | CCS_MINIICONS,
                                       0, 0, 0, 0,
                                       pkscp->hwnd, HWND_TOP, IDC_CONTAINER,
                                       NULL, NULL );
@@ -345,7 +344,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     pfi->cb         = sizeof( FIELDINFO );
     pfi->flData     = CFA_BITMAPORICON | CFA_HORZSEPARATOR | CFA_CENTER |
                       CFA_SEPARATOR;
-    pfi->flTitle    = CFA_CENTER;
+    pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
     pfi->pTitleData = "Icon";
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, mrc.hptrIcon );
     pfi             = pfi->pNextFieldInfo;
@@ -353,7 +352,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     pfi->cb         = sizeof( FIELDINFO );
     pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
                       CFA_SEPARATOR;
-    pfi->flTitle    = CFA_CENTER;
+    pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
     pfi->pTitleData = "Name";
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszName);
 
@@ -1125,6 +1124,97 @@ static int kscpDelete( PKSCPDATA pkscp )
     return 0;
 }
 
+static void ren( PKSCPDATA pkscp, PKSCPRECORD pkr )
+{
+    char oldsftppath[ 512 ], newsftppath[ 512 ];
+    char szMsg[ 512 ];
+
+    snprintf( oldsftppath, sizeof( oldsftppath ), "%s%s",
+              pkscp->pszCurDir, pkr->mrc.pszIcon );
+
+    snprintf( newsftppath, sizeof( newsftppath ), "%s%s",
+              pkscp->pszCurDir, pkr->pszName );
+
+    if( libssh2_sftp_rename( pkscp->sftp_session, oldsftppath, newsftppath ))
+    {
+        snprintf( szMsg, sizeof( szMsg ), "Cannot rename %s to %s",
+                  pkr->mrc.pszIcon, pkr->pszName );
+
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Rename", ID_MSGBOX,
+                       MB_OK | MB_ERROR );
+
+        free( pkr->pszName );
+        pkr->pszName = pkr->mrc.pszIcon;
+    }
+    else
+    {
+        // Now free mrc.pszIcon to prevent memroy leak
+        // See the comment at CN_REALLOCPSZ
+        free( pkr->mrc.pszIcon );
+
+        // Sync with pszName
+        pkr->mrc.pszIcon = pkr->pszName;
+    }
+
+    WinPostMsg( pkscp->hwndCnr, CM_SORTRECORD, fileCompare, 0 );
+}
+
+static int kscpRename( PKSCPDATA pkscp )
+{
+    PKSCPRECORD pkr;
+    PFIELDINFO  pfi;
+    CNREDITDATA ced;
+
+    int  count;
+
+    if( pkscp->fBusy )
+    {
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Session is busy\nTry again, later", "Rename",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    count = checkDlFiles( pkscp );
+
+    if( count == 0 )
+    {
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Files not selected", "Rename",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        return 1;
+    }
+    else if( count > 1 )
+    {
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd,
+                       "Please select only 1 file", "Rename",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    pkr = WinSendMsg( pkscp->hwndCnr, CM_QUERYRECORDEMPHASIS,
+                      MPFROMLONG( CMA_FIRST ), MPFROMLONG( CRA_SELECTED ));
+
+    pfi = WinSendMsg( pkscp->hwndCnr, CM_QUERYDETAILFIELDINFO, 0,
+                      MPFROMLONG( CMA_FIRST ));
+    while( pfi && pfi->offStruct != FIELDOFFSET( KSCPRECORD, pszName ))
+      pfi = WinSendMsg( pkscp->hwndCnr, CM_QUERYDETAILFIELDINFO, pfi,
+                        MPFROMLONG( CMA_NEXT ));
+
+    memset( &ced, 0, sizeof( ced ));
+    ced.cb         = sizeof( ced );
+    ced.pRecord    = ( PRECORDCORE )pkr;
+    ced.pFieldInfo = pfi;
+    ced.id         = CID_LEFTDVWND;
+
+    WinSendMsg( pkscp->hwndCnr, CM_OPENEDIT, MPFROMP( &ced ), 0 );
+
+    return 0;
+}
+
 static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 {
     PKSCPDATA pkscp = WinQueryWindowPtr( hwnd, 0 );
@@ -1161,6 +1251,10 @@ static MRESULT wmCommand( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 
         case IDM_KSCP_DELETE :
             kscpDelete( pkscp );
+            break;
+
+        case IDM_KSCP_RENAME :
+            kscpRename( pkscp );
             break;
     }
 
@@ -1225,6 +1319,44 @@ static void processEnter( PKSCPDATA pkscp, PKSCPRECORD pkr )
         kscpDownload( pkscp );
 }
 
+static MRESULT processDirectEdit( PKSCPDATA pkscp, MPARAM mp1, MPARAM mp2 )
+{
+    PCNREDITDATA pced = ( PCNREDITDATA )mp2;
+    PKSCPRECORD  pkr = ( PKSCPRECORD )pced->pRecord;
+    PFIELDINFO   pfi = pced->pFieldInfo;
+
+    if( !pkr || !pfi || pfi->offStruct != FIELDOFFSET( KSCPRECORD, pszName ))
+        return 0;
+
+    switch( SHORT2FROMMP( mp1 ))
+    {
+        case CN_BEGINEDIT :
+            if( !strcmp( pkr->pszName, ".") || !strcmp( pkr->pszName, ".."))
+                WinPostMsg( pkscp->hwndCnr, CM_CLOSEEDIT, 0, 0 );
+            break;
+
+        case CN_REALLOCPSZ :
+            // Does not free pszName here in order to use mrc.pszIcon as
+            // an old name on CN_ENDEDIT. Then free mrc.pszIcon there
+
+            pkr->pszName = malloc( pced->cbText );
+            if( pkr->pszName )
+                return MRFROMLONG( TRUE );
+            break;
+
+        case CN_ENDEDIT :
+            // If an user cancel direct editing, CN_REALLOCPSZ is not called.
+            // So if pszName and mrc.pszIcon are same, it means that
+            // an user canceled direct editing. In this case, we should not
+            // call ren(). Otherwise it causes double-free memory
+            if( pkr->pszName != pkr->mrc.pszIcon )
+                ren( pkscp, pkr );
+            break;
+    }
+
+    return 0;
+}
+
 static MRESULT wmControl( HWND hwnd, MPARAM mp1, MPARAM mp2 )
 {
     PKSCPDATA pkscp = WinQueryWindowPtr( hwnd, 0 );
@@ -1251,6 +1383,11 @@ static MRESULT wmControl( HWND hwnd, MPARAM mp1, MPARAM mp2 )
                                      (( PNOTIFYRECORDENTER)mp2 )->pRecord );
 
             break;
+
+        case CN_BEGINEDIT :
+        case CN_REALLOCPSZ :
+        case CN_ENDEDIT :
+            return processDirectEdit( pkscp, mp1, mp2 );
     }
 
     return 0;
