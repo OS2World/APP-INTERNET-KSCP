@@ -903,8 +903,6 @@ static void uploadThread( void *arg )
     hab = WinInitialize( 0 );
     hmq = WinCreateMsgQueue( hab, 0);
 
-    WinSetWindowText( pkscp->hwndDlg, "Upload");
-
     if( !papszList )
         papszList = &(( PUPLOADDATA )arg )->apszName;
 
@@ -962,6 +960,8 @@ static int kscpUpload( PKSCPDATA pkscp )
 
     pkscp->hwndDlg = WinLoadDlg( HWND_DESKTOP, pkscp->hwnd, WinDefDlgProc,
                                  0, IDD_DOWNLOAD, pkscp );
+
+    WinSetWindowText( pkscp->hwndDlg, "Upload");
 
     ud.pkscp         = pkscp;
     ud.apszName[ 0 ] = fd.szFullFile;
