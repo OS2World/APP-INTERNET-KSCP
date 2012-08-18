@@ -60,10 +60,10 @@ $(PROGRAM).exe : $($(PROGRAM)_DEPS)
 clean :
 	$(RM) *.bak
 	$(RM) *.rwp
-	$(RM) *.o
-	$(RM) *.res
-	$(RM) *.exe
-	$(RM) *.d
+	$(RM) $(DEPS)
+	$(RM) $(OBJS)
+	$(RM) $(PROGRAM_RC).res
+	$(RM) $(PROGRAM).exe
 
 ifeq ($(filter clean, $(MAKECMDGOALS)),)
 -include $(DEPS)
