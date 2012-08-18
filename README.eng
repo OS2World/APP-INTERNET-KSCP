@@ -1,4 +1,4 @@
-                                 KSCP v0.2.0
+                                 KSCP v0.3.0
                                 -------------
                             
 1. Introduction
@@ -17,7 +17,7 @@
   
   - GNU Make v3.81r3
   
-  - rm v3.16
+  - rm v3.13
   
   - lxlite v1.3.3
   
@@ -26,7 +26,7 @@
 3. Requirements
 ---------------
 
-  - Runtime : kLIBC v0.6.4, OpenSSL v0.9.8r
+  - Runtime : kLIBC v0.6.5, OpenSSL v0.9.8r OS2-KNIX
 
 4. Test Environment
 --------------------
@@ -81,14 +81,25 @@ eComStation 1.2MR.
 -----------------------
 
   Upload selected files to a server.
+  
+6.6.3 Popup - Delete
+--------------------
+
+  Delete selected files.
+  
+6.6.4 Popup - Rename
+--------------------
+
+  Rename a selected file or directory.
     
 7. Limitations/Known bugs
 -----------------------------
 
-  - Support upload/download only
-  
-  - An arbitrary file is selected when a directory is changed
+  - The dialog text can be truncated depending on your system font 
+    configuration
     
+  - The selection is canceled after running rename
+  
 8. TODOs...
 -----------
 
@@ -100,6 +111,17 @@ eComStation 1.2MR.
   
 9. History
 ----------
+
+  - v0.3.0 ( 2012/08/18 )
+    .Support to delete files
+    .Support to rename a file or a directory
+    .Support to confirm to overwrite an existing file on download/upload
+    .An arbitrary file or directory is slected when a directory change. Fixed
+     (Select the first file or the directory)
+    .The background of icon is black. Fixed
+    .Crash if 'Address' field of 'Open Connection' dialog is empty. Fixed
+    .Pressing enter key causes a message box not to disappear if any server is 
+     not selected in a listbox of 'Address Book' dialog. Fixed
 
   - v0.2.0 ( 2012/03/25 )
     .Support an address book
@@ -123,7 +145,7 @@ eComStation 1.2MR.
   
   - libssh2 v1.4.0
   
-  - OpenSSL v0.9.8r
+  - OpenSSL v0.9.8r OS2-KNIX
   
   - zlib v1.2.3
   
