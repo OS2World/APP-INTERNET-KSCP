@@ -14,7 +14,7 @@ STRIP    = lxlite /B- /L- /CS
 else
 CFLAGS  += -O0 -g -DDEBUG
 LDFLAGS += -g -Zomf
-STRIP    = @echo
+STRIP    = echo
 endif
 
 RC = rc
@@ -29,17 +29,23 @@ SRCS = kscp.c addrbookdlg.c windirdlg.c
 DEPS = $(SRCS:.c=.d)
 OBJS = $(SRCS:.c=.o)
 
+# default verbose is quiet, that is V=0
+VERBOSE_  = @
+VERBOSE_0 = @
+
+VERBOSE = $(VERBOSE_$(V))
+
 %.d : %.c
 	@echo [DEP] $@
-	@$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
+	$(VERBOSE)$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
 
 %.o : %.c
 	@echo [CC] $@
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	$(VERBOSE)$(CC) $(CFLAGS) -c -o $@ $<
 
 %.res : %.rc
 	@echo [RC] $@
-	@$(RC) $(RCFLAGS) -r $< $@
+	$(VERBOSE)$(RC) $(RCFLAGS) -r $< $@
 
 all : $(PROGRAM).exe
 
@@ -54,8 +60,8 @@ $(PROGRAM)_DEPS += $(PROGRAM).def
 
 $(PROGRAM).exe : $($(PROGRAM)_DEPS)
 	@echo [LD] $@
-	@$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
-	@$(STRIP) $@
+	$(VERBOSE)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(VERBOSE)$(STRIP) $@
 
 clean :
 	$(RM) *.bak
