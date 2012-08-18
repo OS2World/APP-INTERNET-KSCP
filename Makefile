@@ -17,7 +17,7 @@ LDFLAGS += -g -Zomf
 STRIP    = echo
 endif
 
-RC = rc
+RC      = rc
 RCFLAGS = -n
 
 RM = rm -f
