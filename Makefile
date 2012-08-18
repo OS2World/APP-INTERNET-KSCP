@@ -61,6 +61,7 @@ $(PROGRAM)_DEPS += $(PROGRAM).def
 $(PROGRAM).exe : $($(PROGRAM)_DEPS)
 	$(if $(VERBOSE), @echo [LD] $@)
 	$(VERBOSE)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(if $(VERBOSE), @echo [STRIP] $@)
 	$(VERBOSE)$(STRIP) $@
 
 clean :
