@@ -30,22 +30,22 @@ DEPS = $(SRCS:.c=.d)
 OBJS = $(SRCS:.c=.o)
 
 # default verbose is quiet, that is V=0
-VERBOSE_  = @
-VERBOSE_0 = @
+QUIET_  = @
+QUIET_0 = @
 
-VERBOSE = $(VERBOSE_$(V))
+QUIET = $(QUIET_$(V))
 
 %.d : %.c
-	$(if $(VERBOSE), @echo [DEP] $@)
-	$(VERBOSE)$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
+	$(if $(QUIET), @echo [DEP] $@)
+	$(QUIET)$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
 
 %.o : %.c
-	$(if $(VERBOSE), @echo [CC] $@)
-	$(VERBOSE)$(CC) $(CFLAGS) -c -o $@ $<
+	$(if $(QUIET), @echo [CC] $@)
+	$(QUIET)$(CC) $(CFLAGS) -c -o $@ $<
 
 %.res : %.rc
-	$(if $(VERBOSE), @echo [RC] $@)
-	$(VERBOSE)$(RC) $(RCFLAGS) -r $< $@
+	$(if $(QUIET), @echo [RC] $@)
+	$(QUIET)$(RC) $(RCFLAGS) -r $< $@
 
 all : $(PROGRAM).exe
 
@@ -59,10 +59,10 @@ $(PROGRAM)_DEPS += $(PROGRAM_RC).res
 $(PROGRAM)_DEPS += $(PROGRAM).def
 
 $(PROGRAM).exe : $($(PROGRAM)_DEPS)
-	$(if $(VERBOSE), @echo [LD] $@)
-	$(VERBOSE)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
-	$(if $(VERBOSE), @echo [STRIP] $@)
-	$(VERBOSE)$(STRIP) $@
+	$(if $(QUIET), @echo [LD] $@)
+	$(QUIET)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(if $(QUIET), @echo [STRIP] $@)
+	$(QUIET)$(STRIP) $@
 
 clean :
 	$(RM) *.bak
