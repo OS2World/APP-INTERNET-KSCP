@@ -36,15 +36,15 @@ VERBOSE_0 = @
 VERBOSE = $(VERBOSE_$(V))
 
 %.d : %.c
-	@echo [DEP] $@
+	$(if $(VERBOSE), @echo [DEP] $@)
 	$(VERBOSE)$(CC) $(CFLAGS) -MM -MP -MT "$(@:.d=.o) $@" -MF $@ $<
 
 %.o : %.c
-	@echo [CC] $@
+	$(if $(VERBOSE), @echo [CC] $@)
 	$(VERBOSE)$(CC) $(CFLAGS) -c -o $@ $<
 
 %.res : %.rc
-	@echo [RC] $@
+	$(if $(VERBOSE), @echo [RC] $@)
 	$(VERBOSE)$(RC) $(RCFLAGS) -r $< $@
 
 all : $(PROGRAM).exe
@@ -59,7 +59,7 @@ $(PROGRAM)_DEPS += $(PROGRAM_RC).res
 $(PROGRAM)_DEPS += $(PROGRAM).def
 
 $(PROGRAM).exe : $($(PROGRAM)_DEPS)
-	@echo [LD] $@
+	$(if $(VERBOSE), @echo [LD] $@)
 	$(VERBOSE)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(VERBOSE)$(STRIP) $@
 
