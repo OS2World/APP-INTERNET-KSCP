@@ -49,7 +49,7 @@
 
 #include "kscprc.h"
 
-#define KSCP_VERSION "0.2.0"
+#define KSCP_VERSION "0.3.0"
 
 #define WC_KSCP  "KSCP CLASS"
 
