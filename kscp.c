@@ -227,7 +227,7 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
 {
     struct sockaddr_in sin;
     const char        *fingerprint;
-    char               szFingerprint[ 80 ];
+    char               szMsg[ 512 ];
     int                auth_pw = 1;
     struct hostent    *host;
     PFIELDINFO         pfi, pfiStart;
@@ -251,10 +251,10 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     host = gethostbyname( psi->szAddress );
     if( !host )
     {
-        snprintf( szFingerprint, sizeof( szFingerprint ), 
+        snprintf( szMsg, sizeof( szMsg ), 
                   "Cannot resolve host %s", psi->szAddress ); 
         
-        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szFingerprint, "Connect",
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg, "Connect",
                        ID_MSGBOX, MB_OK | MB_ERROR );
                        
         goto exit_close_socket;
@@ -296,10 +296,10 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     fingerprint = libssh2_hostkey_hash( pkscp->session,
                                         LIBSSH2_HOSTKEY_HASH_SHA1 );
     for( i = 0; i < 20; i++ )
-        sprintf( szFingerprint + i * 3, "%02X ",
+        sprintf( szMsg + i * 3, "%02X ",
                  ( unsigned char )fingerprint[ i ]);
 
-    WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szFingerprint,
+    WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szMsg,
                    "Fingerprint", ID_MSGBOX, MB_OK | MB_INFORMATION );
 
     if( auth_pw )
