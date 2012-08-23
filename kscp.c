@@ -249,6 +249,16 @@ static BOOL kscpConnect( PKSCPDATA pkscp, PSERVERINFO psi )
     pkscp->sock = socket( AF_INET, SOCK_STREAM, 0 );
 
     host = gethostbyname( psi->szAddress );
+    if( !host )
+    {
+        snprintf( szFingerprint, sizeof( szFingerprint ), 
+                  "Cannot resolve host %s", psi->szAddress ); 
+        
+        WinMessageBox( HWND_DESKTOP, pkscp->hwnd, szFingerprint, "Connect",
+                       ID_MSGBOX, MB_OK | MB_ERROR );
+                       
+        goto exit_close_socket;
+    }
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons( 22 );
