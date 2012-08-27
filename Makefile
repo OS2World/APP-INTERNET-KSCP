@@ -10,6 +10,7 @@ LIBS    = -lssh2 -lcrypto -lssl -lz
 
 ifdef RELEASE
 CFLAGS  += -O3
+LDFLAGS += -s
 STRIP    = lxlite /B- /L- /CS
 else
 CFLAGS  += -O0 -g -DDEBUG
