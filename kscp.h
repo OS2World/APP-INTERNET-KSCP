@@ -39,57 +39,20 @@
 #ifndef KSCP_H
 #define KSCP_H
 
-#include <os2.h>
-
-#include <libssh2.h>
-#include <libssh2_sftp.h>
-
-#include "windirdlg.h"
-#include "addrbookdlg.h"
+#include <KPMApp.h>
 
 #include "kscprc.h"
 
-#define KSCP_VERSION "0.3.0"
+#define KSCP_VERSION    "0.3.0"
 
-#define WC_KSCP  "KSCP CLASS"
+#define WC_KSCP "KSCP CLASS"
 
 #define KSCP_PRF_APP    "KSCP"
 
 #define KSCP_TITLE  "KSCP"
 
-#define IDC_CONTAINER   1
-#define ID_MSGBOX       99
-
-typedef struct _KSCPDATA
-{
-    HWND                 hwnd;
-    HWND                 hwndCnr;
-    HWND                 hwndPopup;
-    int                  sock;
-    HMODULE              hmodPMWP;
-    HPOINTER             hptrDefaultFile;
-    HPOINTER             hptrDefaultFolder;
-    HWND                 hwndDlg;
-    LIBSSH2_SESSION     *session;
-    LIBSSH2_SFTP        *sftp_session;
-    char                *pszCurDir;
-    char                *pszDlDir;
-    BOOL                 fBusy;
-    BOOL                 fCanceled;
-} KSCPDATA, *PKSCPDATA;
-
-typedef struct _KSCPRECORD
-{
-    MINIRECORDCORE mrc;
-    PSZ            pszName;
-    PVOID          pAttr;
-} KSCPRECORD, *PKSCPRECORD;
-
-#define CB_EXTRA_KSCPRECORD \
-    ( sizeof( KSCPRECORD ) - sizeof( MINIRECORDCORE ))
-
 #ifdef DEBUG
-#include <stdio.h>
+#include <cstdio>
 
 #define dprintf( ... ) \
 do {\
@@ -102,4 +65,12 @@ do {\
 #define dprintf( ... ) do { } while( 0 )
 #endif
 
+class KSCP : public KPMApp
+{
+public :
+    KSCP() : KPMApp() {}
+    ~KSCP() {}
+
+    virtual int Run();
+};
 #endif

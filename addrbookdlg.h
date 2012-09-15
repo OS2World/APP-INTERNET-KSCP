@@ -39,7 +39,7 @@
 #ifndef ADDRBOOKDLG_H
 #define ADDRBOOKDLG_H
 
-#include <os2.h>
+#include <KWindow.h>
 
 #define KSCP_PRF_KEY_SHOW   "SHOW"
 
@@ -51,7 +51,6 @@ typedef struct _SERVERINFO
     char szDir[ 512 ];
 } SERVERINFO, *PSERVERINFO;
 
-BOOL abDlg( HWND, PSERVERINFO );
-BOOL getServerInfo( HWND, PSERVERINFO, BOOL );
-
+bool abDlg( KWindow*, PSERVERINFO );
+bool getServerInfo( KWindow*, PSERVERINFO, bool );
 #endif
