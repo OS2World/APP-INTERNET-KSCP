@@ -1159,14 +1159,13 @@ MRESULT KSCPClient::OnControl( USHORT id, USHORT usNotifyCode,
 
 MRESULT KSCPClient::OnPaint()
 {
-    HPS   hps;
+    KPresentationSpace kps;
+
     RECTL rcl;
 
-    hps = BeginPaint( 0, &rcl);
-
-    FillRect( hps, &rcl, SYSCLR_WINDOW );
-
-    EndPaint( hps );
+    kps.BeginPaint( this, 0, &rcl );
+    kps.FillRect( &rcl, SYSCLR_WINDOW );
+    kps.EndPaint();
 
     return 0;
 }
