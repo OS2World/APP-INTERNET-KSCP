@@ -151,7 +151,7 @@ bool KSCPClient::ReadDir( const char* dir )
 
     // Scroll to the top
     _kcnr.SendMsg( WM_CHAR, MPFROMSHORT( KC_VIRTUALKEY ),
-                         MPFROM2SHORT( 0, VK_HOME ));
+                   MPFROM2SHORT( 0, VK_HOME ));
 
     return true;
 }
@@ -323,8 +323,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     ci.slBitmapOrIcon.cx = 0;
     ci.slBitmapOrIcon.cy = ci.slBitmapOrIcon.cx;
 
-    _kcnr.SetCnrInfo( &ci, CMA_PSORTRECORD | CMA_FLWINDOWATTR |
-                                 CMA_SLBITMAPORICON );
+    _kcnr.SetCnrInfo( &ci,
+                      CMA_PSORTRECORD | CMA_FLWINDOWATTR |
+                      CMA_SLBITMAPORICON );
 
     if( !ReadDir( psi->szDir ))
         goto exit_destroy_window;
