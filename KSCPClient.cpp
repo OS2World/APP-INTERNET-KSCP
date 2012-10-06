@@ -118,7 +118,7 @@ bool KSCPClient::ReadDir( const char* dir )
             pkr->mrc.pszIcon   = pkr->pszName;
 
             ri.cb                = sizeof( RECORDINSERT );
-            ri.pRecordOrder      = ( PRECORDCORE )CMA_END;
+            ri.pRecordOrder      = reinterpret_cast< PRECORDCORE >( CMA_END );
             ri.pRecordParent     = NULL;
             ri.zOrder            = CMA_TOP;
             ri.fInvalidateRecord = false;
@@ -454,7 +454,8 @@ PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
     LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
     pkr = _kcnr.QueryRecordEmphasis( pkrStart ? pkrStart :
-                                                ( PKSCPRECORD )CMA_FIRST,
+                                                reinterpret_cast< PKSCPRECORD >
+                                                    ( CMA_FIRST ),
                                      ulEM );
 
     while( pkr )
