@@ -12,6 +12,8 @@ typedef struct _KSCPRECORD
     MINIRECORDCORE mrc;
     PSZ            pszName;
     PVOID          pAttr;
+    PSZ            pszSize;
+    PSZ            pszDate;
 } KSCPRECORD, *PKSCPRECORD;
 
 class KSCPContainer : public KContainer< KSCPRECORD, true >

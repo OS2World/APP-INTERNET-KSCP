@@ -66,6 +66,50 @@ bool KSCPClient::ReadDir( const char* dir )
             pkr->pszName       = strdup( mem );
             pkr->pAttr         = malloc( sizeof( attrs ));
             memcpy( pkr->pAttr, &attrs, sizeof( attrs ));
+
+            if( attrs.flags & LIBSSH2_SFTP_ATTR_SIZE &&
+                hptrIcon != _hptrDefaultFolder )
+            {
+                static const char* pszUnit[] = {"B", "KB", "MB", "GB", "TB"};
+
+                int    iUnit = 0;
+                double dSize = attrs.filesize;
+
+                for( iUnit = 0;
+                     iUnit < sizeof( pszUnit ) / sizeof( pszUnit[ 0 ]) - 1; )
+                {
+                    if( dSize > 1024.0 )
+                    {
+                        dSize /= 1024.0;
+                        iUnit++;
+                    }
+                    else
+                        break;
+                }
+
+                snprintf( mem, sizeof( mem ),"%.*f %s",
+                          iUnit == 0 ? 0 : 2, dSize, pszUnit[ iUnit ]);
+
+                pkr->pszSize = strdup( mem );
+            }
+            else
+                pkr->pszSize = 0;
+
+            if( attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME )
+            {
+               struct tm tm = *localtime( reinterpret_cast< time_t* >
+                                            ( &attrs.mtime ));
+
+               snprintf( mem, sizeof( mem ),
+                         "%04d-%02d-%02d, %02d:%02d",
+                         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                         tm.tm_hour, tm.tm_min );
+
+                pkr->pszDate = strdup( mem );
+            }
+            else
+                pkr->pszDate = 0;
+
             //pkr->mrc.cb        = sizeof( KSCPRECORD );
             pkr->mrc.hptrIcon  = hptrIcon;
             pkr->mrc.pszIcon   = pkr->pszName;
@@ -231,7 +275,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                        CCS_MINIRECORDCORE | CCS_MINIICONS,
                        0, 0, 0, 0, this, KWND_TOP, IDC_CONTAINER );
 
-    pfi = pfiStart = _kcnr.AllocDetailFieldInfo( 2 );
+    pfi = pfiStart = _kcnr.AllocDetailFieldInfo( 4 );
 
     pfi->cb         = sizeof( FIELDINFO );
     pfi->flData     = CFA_BITMAPORICON | CFA_HORZSEPARATOR | CFA_CENTER |
@@ -247,10 +291,26 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
     pfi->pTitleData = const_cast< char* >("Name");
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszName);
+    pfi             = pfi->pNextFieldInfo;
+
+    pfi->cb         = sizeof( FIELDINFO );
+    pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
+                      CFA_SEPARATOR;
+    pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
+    pfi->pTitleData = const_cast< char* >("Size");
+    pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszSize);
+    pfi             = pfi->pNextFieldInfo;
+
+    pfi->cb         = sizeof( FIELDINFO );
+    pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
+                      CFA_SEPARATOR;
+    pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
+    pfi->pTitleData = const_cast< char* >("Date");
+    pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszDate);
 
     fii.cb                   = ( ULONG )( sizeof( FIELDINFOINSERT ));
     fii.pFieldInfoOrder      = reinterpret_cast< PFIELDINFO >( CMA_FIRST );
-    fii.cFieldInfoInsert     = 2;
+    fii.cFieldInfoInsert     = 4;
     fii.fInvalidateFieldInfo = true;
 
     _kcnr.InsertDetailFieldInfo( pfiStart, &fii );
@@ -307,6 +367,8 @@ void KSCPClient::RemoveRecordAll()
 
         delete[] pkr->pszName;
         free( pkr->pAttr );
+        free( pkr->pszSize );
+        free( pkr->pszDate );
 
         _kcnr.RemoveRecord( &pkr, 1, CMA_FREE );
     }
