@@ -69,8 +69,8 @@ bool KSCPClient::ReadDir( const char* dir )
             pkr->pbAttr = new BYTE[ sizeof( attrs )];
             memcpy( pkr->pbAttr, &attrs, sizeof( attrs ));
 
-            if( attrs.flags & LIBSSH2_SFTP_ATTR_SIZE &&
-                hptrIcon != _hptrDefaultFolder )
+            if( hptrIcon != _hptrDefaultFolder &&
+                attrs.flags & LIBSSH2_SFTP_ATTR_SIZE )
             {
                 static const char* pszUnit[] = {"B", "KB", "MB", "GB", "TB"};
 
