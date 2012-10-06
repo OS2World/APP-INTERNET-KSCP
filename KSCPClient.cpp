@@ -1138,7 +1138,7 @@ MRESULT KSCPClient::CnEdit( USHORT usNotifyCode, ULONG ulParam )
             // If an user cancel direct editing, CN_REALLOCPSZ is not called.
             // So if pszName and mrc.pszIcon are same, it means that
             // an user canceled direct editing. In this case, we should not
-            // call ren(). Otherwise it causes double-free memory
+            // call Rename(). Otherwise it causes double-free memory
             if( pkr->pszName != pkr->mrc.pszIcon )
                 Rename( pkr );
             break;
