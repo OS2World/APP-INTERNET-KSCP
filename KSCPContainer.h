@@ -11,7 +11,7 @@ typedef struct _KSCPRECORD
 {
     MINIRECORDCORE mrc;
     PSZ            pszName;
-    PVOID          pAttr;
+    PBYTE          pbAttr;
     PSZ            pszSize;
     PSZ            pszDate;
 } KSCPRECORD, *PKSCPRECORD;
@@ -27,8 +27,8 @@ protected :
 
         int rc;
 
-        pattr1 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p1->pAttr );
-        pattr2 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p2->pAttr );
+        pattr1 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p1->pbAttr );
+        pattr2 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p2->pbAttr );
 
         // directory first
         rc = LIBSSH2_SFTP_S_ISDIR( pattr2->permissions ) -

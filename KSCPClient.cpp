@@ -66,8 +66,8 @@ bool KSCPClient::ReadDir( const char* dir )
             pkr->pszName = new char[ strlen( mem ) + 1 ];
             strcpy( pkr->pszName, mem );
 
-            pkr->pAttr         = malloc( sizeof( attrs ));
-            memcpy( pkr->pAttr, &attrs, sizeof( attrs ));
+            pkr->pbAttr = new BYTE[ sizeof( attrs )];
+            memcpy( pkr->pbAttr, &attrs, sizeof( attrs ));
 
             if( attrs.flags & LIBSSH2_SFTP_ATTR_SIZE &&
                 hptrIcon != _hptrDefaultFolder )
@@ -368,7 +368,7 @@ void KSCPClient::RemoveRecordAll()
         pkrNext = _kcnr.QueryRecord( pkr, CMA_NEXT, CMA_ITEMORDER );
 
         delete[] pkr->pszName;
-        free( pkr->pAttr );
+        delete[] pkr->pbAttr;
         free( pkr->pszSize );
         free( pkr->pszDate );
 
@@ -458,7 +458,7 @@ PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
 
     while( pkr )
     {
-        pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
+        pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
             break;
         else if( fWithDir && LIBSSH2_SFTP_S_ISDIR( pattr->permissions ) &&
@@ -527,7 +527,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         return rc;
     }
 
-    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
+    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
 
     buf = new char[ BUF_SIZE ];
     _makepath( buf, NULL, _strDlDir.c_str(), pkr->pszName, NULL );
@@ -1069,7 +1069,7 @@ MRESULT KSCPClient::CnEnter( ULONG ulParam )
 
     LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
-    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
+    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
     if( LIBSSH2_SFTP_S_ISDIR( pattr->permissions ))
     {
         char* pszNewDir = NULL;
