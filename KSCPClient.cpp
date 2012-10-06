@@ -74,23 +74,23 @@ bool KSCPClient::ReadDir( const char* dir )
             {
                 static const char* pszUnit[] = {"B", "KB", "MB", "GB", "TB"};
 
-                int    iUnit = 0;
-                double dSize = attrs.filesize;
+                unsigned usUnit = 0;
+                double   dSize = attrs.filesize;
 
-                for( iUnit = 0;
-                     iUnit < sizeof( pszUnit ) / sizeof( pszUnit[ 0 ]) - 1; )
+                for( usUnit = 0;
+                     usUnit < sizeof( pszUnit ) / sizeof( pszUnit[ 0 ]) - 1; )
                 {
                     if( dSize > 1024.0 )
                     {
                         dSize /= 1024.0;
-                        iUnit++;
+                        usUnit++;
                     }
                     else
                         break;
                 }
 
                 snprintf( mem, sizeof( mem ),"%.*f %s",
-                          iUnit == 0 ? 0 : 2, dSize, pszUnit[ iUnit ]);
+                          usUnit == 0 ? 0 : 2, dSize, pszUnit[ usUnit ]);
 
                 pkr->pszSize = strdup( mem );
             }
