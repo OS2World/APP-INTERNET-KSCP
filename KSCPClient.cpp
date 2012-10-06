@@ -63,7 +63,9 @@ bool KSCPClient::ReadDir( const char* dir )
                LIBSSH2_SFTP_S_ISDIR( attrs.permissions ))
                 hptrIcon = _hptrDefaultFolder;
 
-            pkr->pszName       = strdup( mem );
+            pkr->pszName = new char[ strlen( mem ) + 1 ];
+            strcpy( pkr->pszName, mem );
+
             pkr->pAttr         = malloc( sizeof( attrs ));
             memcpy( pkr->pAttr, &attrs, sizeof( attrs ));
 
