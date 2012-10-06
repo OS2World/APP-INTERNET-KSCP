@@ -980,7 +980,8 @@ void KSCPClient::Rename( PKSCPRECORD pkr )
     snprintf( newsftppath, sizeof( newsftppath ), "%s%s",
               _strCurDir.c_str(), pkr->pszName );
 
-    if( libssh2_sftp_rename( _sftp_session, oldsftppath, newsftppath ))
+    if( strcmp( oldsftppath, newsftppath) &&
+        libssh2_sftp_rename( _sftp_session, oldsftppath, newsftppath ))
     {
         snprintf( szMsg, sizeof( szMsg ), "Cannot rename %s to %s",
                   pkr->mrc.pszIcon, pkr->pszName );
