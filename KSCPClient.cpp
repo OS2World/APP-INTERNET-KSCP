@@ -1092,13 +1092,11 @@ MRESULT KSCPClient::CnEnter( ULONG ulParam )
             RemoveRecordAll();
 
             if( !ReadDir( pszNewDir ))
-            {
                 ReadDir( _strCurDir.c_str() );
-
-                free( pszNewDir );
-            }
             else
                 _strCurDir = pszNewDir;
+
+            free( pszNewDir );
         }
     }
     else
