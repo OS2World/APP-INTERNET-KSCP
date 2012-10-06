@@ -2,6 +2,8 @@
 #define INCL_DOS
 #include <os2.h>
 
+#include <ctime>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
