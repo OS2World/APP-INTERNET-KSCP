@@ -49,7 +49,7 @@ private :
     bool                _fBusy;
     bool                _fCanceled;
 
-    bool ReadDir( const char *dir );
+    bool ReadDir( const char* dir );
     bool KSCPConnect( PSERVERINFO psi );
 
     void RemoveRecordAll();
@@ -75,7 +75,7 @@ private :
 
     void RemoteMain( PFN_REMOTE_CALLBACK pCallback );
 
-    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const char * );
+    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const char* );
 
     struct LocalParam
     {
@@ -88,7 +88,7 @@ private :
     int Download( PKSCPRECORD pkr );
     int KSCPDownload();
 
-    int Upload( const char *pszName );
+    int Upload( const char*pszName );
     int KSCPUpload();
 
     int Delete( PKSCPRECORD pkr );

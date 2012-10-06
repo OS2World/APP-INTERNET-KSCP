@@ -56,7 +56,7 @@
 
 #define dprintf( ... ) \
 do {\
-    FILE *fp;\
+    FILE* fp;\
     fp = fopen("kscp.log", "at");\
     fprintf( fp, __VA_ARGS__ );\
     fclose( fp );\

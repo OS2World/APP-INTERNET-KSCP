@@ -22,9 +22,9 @@
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"
 
-bool KSCPClient::ReadDir( const char *dir )
+bool KSCPClient::ReadDir( const char* dir )
 {
-    LIBSSH2_SFTP_HANDLE *sftp_handle;
+    LIBSSH2_SFTP_HANDLE* sftp_handle;
     PKSCPRECORD          pkr;
     RECORDINSERT         ri;
     ULONG                ulStyle;
@@ -112,10 +112,10 @@ bool KSCPClient::ReadDir( const char *dir )
 bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 {
     struct sockaddr_in sin;
-    const char        *fingerprint;
+    const char*        fingerprint;
     char               szMsg[ 512 ];
     int                auth_pw = 1;
-    struct hostent    *host;
+    struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
     FIELDINFOINSERT    fii;
     CNRINFO            ci;
@@ -149,8 +149,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons( 22 );
-    sin.sin_addr.s_addr = *( u_long * )host->h_addr;
-    if( connect( _sock, ( struct sockaddr * )( &sin ),
+    sin.sin_addr.s_addr = *reinterpret_cast< u_long* >( host->h_addr );
+    if( connect( _sock, reinterpret_cast< struct sockaddr* >( &sin ),
                  sizeof( struct sockaddr_in )) != 0 )
     {
         fprintf(stderr, "failed to connect!\n");
@@ -386,7 +386,7 @@ PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
 {
     PKSCPRECORD pkr;
 
-    LIBSSH2_SFTP_ATTRIBUTES *pattr;
+    LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
     pkr = _kcnr.QueryRecordEmphasis( pkrStart ? pkrStart :
                                                ( PKSCPRECORD )CMA_FIRST,
@@ -394,7 +394,7 @@ PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
 
     while( pkr )
     {
-        pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
+        pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
         if( LIBSSH2_SFTP_S_ISREG( pattr->permissions ))
             break;
         else if( fWithDir && LIBSSH2_SFTP_S_ISDIR( pattr->permissions ) &&
@@ -435,13 +435,13 @@ void KSCPClient::Refresh()
 
 int KSCPClient::Download( PKSCPRECORD pkr )
 {
-    LIBSSH2_SFTP_HANDLE     *sftp_handle;
+    LIBSSH2_SFTP_HANDLE*     sftp_handle;
     char                     sftppath[ 512 ];
-    LIBSSH2_SFTP_ATTRIBUTES *pattr;
+    LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
     struct stat       statbuf;
-    FILE             *fp;
-    char             *buf;
+    FILE*             fp;
+    char*             buf;
     libssh2_uint64_t  size;
     char              szMsg[ 512 ];
 
@@ -463,7 +463,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         return rc;
     }
 
-    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
+    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
 
     buf = new char[ BUF_SIZE ];
     _makepath( buf, NULL, _strDlDir.c_str(), pkr->pszName, NULL );
@@ -612,15 +612,15 @@ int KSCPClient::KSCPDownload()
     return 0;
 }
 
-int KSCPClient::Upload( const char *pszName )
+int KSCPClient::Upload( const char* pszName )
 {
-    LIBSSH2_SFTP_HANDLE    *sftp_handle;
+    LIBSSH2_SFTP_HANDLE*    sftp_handle;
     char                    sftppath[ 512 ];
     LIBSSH2_SFTP_ATTRIBUTES sftp_attrs;
 
-    FILE *fp;
+    FILE* fp;
     off_t size, fileSize;
-    char *buf;
+    char* buf;
     char  szMsg[ 512 ];
 
     struct stat statbuf;
@@ -691,7 +691,7 @@ int KSCPClient::Upload( const char *pszName )
     if( fileSize )
     {
         int         nRead, nWrite;
-        const char *ptr;
+        const char* ptr;
 
         for( size = diffTime = 0; !_fCanceled; )
         {
@@ -1003,12 +1003,12 @@ MRESULT KSCPClient::CnEnter( ULONG ulParam )
     if( !pkr )
         return 0;
 
-    LIBSSH2_SFTP_ATTRIBUTES *pattr;
+    LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
-    pattr = ( LIBSSH2_SFTP_ATTRIBUTES * )pkr->pAttr;
+    pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pAttr );
     if( LIBSSH2_SFTP_S_ISDIR( pattr->permissions ))
     {
-        char *pszNewDir = NULL;
+        char* pszNewDir = NULL;
 
         if( strcmp( pkr->pszName, ".."))
             asprintf( &pszNewDir, "%s%s/", _strCurDir.c_str(), pkr->pszName );

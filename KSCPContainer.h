@@ -20,12 +20,13 @@ protected :
     virtual SHORT KSortCompare( PKSCPRECORD p1, PKSCPRECORD p2,
                                 PVOID pStorage )
     {
-        LIBSSH2_SFTP_ATTRIBUTES *pattr1, *pattr2;
+        LIBSSH2_SFTP_ATTRIBUTES* pattr1;
+        LIBSSH2_SFTP_ATTRIBUTES* pattr2;
 
         int rc;
 
-        pattr1 = ( LIBSSH2_SFTP_ATTRIBUTES * )p1->pAttr;
-        pattr2 = ( LIBSSH2_SFTP_ATTRIBUTES * )p2->pAttr;
+        pattr1 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p1->pAttr );
+        pattr2 = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( p2->pAttr );
 
         // directory first
         rc = LIBSSH2_SFTP_S_ISDIR( pattr2->permissions ) -
