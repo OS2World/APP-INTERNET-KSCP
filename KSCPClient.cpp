@@ -97,7 +97,8 @@ bool KSCPClient::ReadDir( const char* dir )
             else
                 pkr->pszSize = 0;
 
-            if( attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME )
+            if( strcmp( pkr->pszName, "..") &&
+                attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME )
             {
                struct tm tm = *localtime( reinterpret_cast< time_t* >
                                             ( &attrs.mtime ));
