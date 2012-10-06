@@ -299,7 +299,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     pfi             = pfi->pNextFieldInfo;
 
     pfi->cb         = sizeof( FIELDINFO );
-    pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
+    pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_RIGHT |
                       CFA_SEPARATOR | CFA_FIREADONLY;
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
     pfi->pTitleData = const_cast< char* >("Size");
