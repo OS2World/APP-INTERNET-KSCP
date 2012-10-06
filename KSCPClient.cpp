@@ -150,7 +150,7 @@ bool KSCPClient::ReadDir( const char* dir )
     _kcnr.SetWindowULong( QWL_STYLE, ulStyle );
 
     // Scroll to the top
-    _kcnr.SendMsg( WM_CHAR, MPFROMSHORT( KC_VIRTUALKEY ),
+    _kcnr.PostMsg( WM_CHAR, MPFROMSHORT( KC_VIRTUALKEY ),
                    MPFROM2SHORT( 0, VK_HOME ));
 
     return true;
