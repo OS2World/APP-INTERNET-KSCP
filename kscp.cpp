@@ -64,8 +64,8 @@ int KSCP::Run()
 
     ULONG flFrameFlags;
     flFrameFlags = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINMAX | FCF_SIZEBORDER |
-                   FCF_SHELLPOSITION | FCF_TASKLIST | FCF_MENU;
-
+                   FCF_SHELLPOSITION | FCF_TASKLIST | FCF_MENU |
+                   FCF_ACCELTABLE;
 
     KFrameWindow kframe;
     kframe.CreateStdWindow( KWND_DESKTOP,           // parent window handle

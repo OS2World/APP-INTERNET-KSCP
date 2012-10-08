@@ -29,6 +29,7 @@ protected :
                             SHORT scxNew, SHORT scyNew );
 
     virtual MRESULT CmdSrcMenu( USHORT usCmd, bool fPointer );
+    virtual MRESULT CmdSrcAccelerator( USHORT usCmd, bool fPointer );
 
 private :
     friend class KRemoteWorkThread;

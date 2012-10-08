@@ -1290,3 +1290,19 @@ MRESULT KSCPClient::CmdSrcMenu( USHORT usCmd, bool fPointer )
     return 0;
 }
 
+MRESULT KSCPClient::CmdSrcAccelerator( USHORT usCmd, bool fPointer )
+{
+    switch( usCmd )
+    {
+        case IDM_KSCP_UPLOAD :
+            KSCPUpload();
+            break;
+
+        case IDM_KSCP_DELETE :
+            KSCPDelete();
+            break;
+    }
+
+    return 0;
+}
+
