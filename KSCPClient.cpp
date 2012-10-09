@@ -71,6 +71,8 @@ bool KSCPClient::ReadDir( const char* dir )
             pkr->pbAttr = new BYTE[ sizeof( attrs )];
             memcpy( pkr->pbAttr, &attrs, sizeof( attrs ));
 
+            pkr->pszSize = 0;
+
             if( hptrIcon != _hptrDefaultFolder &&
                 attrs.flags & LIBSSH2_SFTP_ATTR_SIZE )
             {
@@ -91,13 +93,12 @@ bool KSCPClient::ReadDir( const char* dir )
                         break;
                 }
 
-                snprintf( mem, sizeof( mem ),"%.*f %s",
+                asprintf( &pkr->pszSize, "%.*f %s",
                           usUnit == 0 ? 0 : 2, dSize, pszUnit[ usUnit ]);
-
-                pkr->pszSize = strdup( mem );
             }
-            else
-                pkr->pszSize = 0;
+
+
+            pkr->pszDate = 0;
 
             if( strcmp( pkr->pszName, "..") &&
                 attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME )
@@ -105,15 +106,10 @@ bool KSCPClient::ReadDir( const char* dir )
                struct tm tm = *localtime( reinterpret_cast< time_t* >
                                             ( &attrs.mtime ));
 
-               snprintf( mem, sizeof( mem ),
-                         "%04d-%02d-%02d, %02d:%02d",
+               asprintf( &pkr->pszDate, "%04d-%02d-%02d, %02d:%02d",
                          tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                          tm.tm_hour, tm.tm_min );
-
-                pkr->pszDate = strdup( mem );
             }
-            else
-                pkr->pszDate = 0;
 
             //pkr->mrc.cb        = sizeof( KSCPRECORD );
             pkr->mrc.hptrIcon  = hptrIcon;
