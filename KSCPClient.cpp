@@ -272,8 +272,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     libssh2_session_set_blocking( _session, 1 );
 
     _kcnr.CreateWindow( this, NULL,
-                       CCS_AUTOPOSITION | CCS_EXTENDSEL |
-                       CCS_MINIRECORDCORE | CCS_MINIICONS,
+                       CCS_AUTOPOSITION | CCS_EXTENDSEL | CCS_MINIICONS,
                        0, 0, 0, 0, this, KWND_TOP, IDC_CONTAINER );
 
     pfi = pfiStart = _kcnr.AllocDetailFieldInfo( 4 );
