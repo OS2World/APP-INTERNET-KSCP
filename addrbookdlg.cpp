@@ -65,11 +65,13 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
         KEntryField kefUserName;
         KEntryField kefPassword;
         KEntryField kefDir;
+        KButton     kbtnPublicKey;
 
         kdlg.WindowFromID( IDCB_OPEN_ADDR, kcbAddr );
         kdlg.WindowFromID( IDEF_OPEN_USERNAME, kefUserName );
         kdlg.WindowFromID( IDEF_OPEN_PASSWORD, kefPassword );
         kdlg.WindowFromID( IDEF_OPEN_DIRECTORY, kefDir );
+        kdlg.WindowFromID( IDCB_OPEN_PUBLICKEY, kbtnPublicKey );
 
         kefUserName.SetTextLimit( sizeof( psi->szUserName ));
         kefPassword.SetTextLimit( sizeof( psi->szPassword ));
@@ -81,6 +83,7 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
             kefUserName.SetWindowText( psi->szUserName );
             kefPassword.SetWindowText( psi->szPassword );
             kefDir.SetWindowText( psi->szDir );
+            kbtnPublicKey.SetCheck( psi->fUsePublicKey );
         }
 
         kdlg.ProcessDlg();
@@ -104,6 +107,8 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
             len = strlen( psi->szDir );
             if( !len || psi->szDir[ len - 1 ] != '/')
                 strcat( psi->szDir, "/");
+
+            psi->fUsePublicKey = kbtnPublicKey.QueryCheck();
 
             if( !psi->szAddress[ 0 ])
                 ulReply = DID_CANCEL;

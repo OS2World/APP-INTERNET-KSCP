@@ -159,7 +159,6 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     struct sockaddr_in sin;
     const char*        fingerprint;
     char               szMsg[ 512 ];
-    int                auth_pw = 1;
     struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
     FIELDINFOINSERT    fii;
@@ -232,7 +231,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     MessageBox( szMsg, "Fingerprint", MB_OK | MB_INFORMATION );
 
-    if( auth_pw )
+    if( !psi->fUsePublicKey )
     {
         /* We could authenticate via password */
         if( libssh2_userauth_password( _session, psi->szUserName,
@@ -245,11 +244,40 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     }
     else
     {
+        ULONG ulBootDrive;
+
+        DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                         &ulBootDrive, sizeof( ulBootDrive ));
+
+        char szKeyDir[ CCHMAXPATH ];
+
+        snprintf( szKeyDir, sizeof( szKeyDir ), "%c:/os2/.ssh",
+                  static_cast< char >( ulBootDrive + 'A' - 1 ));
+
+        struct stat statbuf;
+        if( stat( szKeyDir, &statbuf ) || !S_ISDIR( statbuf.st_mode ))
+        {
+            const char* pszHome = getenv("HOME");
+            if( !pszHome )
+                pszHome = ".";
+
+            snprintf( szKeyDir, sizeof( szKeyDir ), "%s/.ssh", pszHome );
+        }
+
+        char szPublicKey[ CCHMAXPATH ];
+        char szPrivateKey[ CCHMAXPATH ];
+
+        snprintf( szPublicKey, sizeof( szPublicKey ), "%s/id_rsa.pub",
+                  szKeyDir );
+
+        snprintf( szPrivateKey, sizeof( szPrivateKey ), "%s/id_rsa",
+                  szKeyDir );
+
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,
                             psi->szUserName,
-                            "/home/username/.ssh/id_rsa.pub",
-                            "/home/username/.ssh/id_rsa",
+                            szPublicKey,
+                            szPrivateKey,
                             psi->szPassword ))
         {
             printf("\tAuthentication by public key failed\n");
