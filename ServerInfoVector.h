@@ -18,10 +18,14 @@ public :
     int Count() const { return _vtServerInfo.size(); }
 
     const PSERVERINFO Search( LONG lIndex ) const
-    { return _vtServerInfo[ lIndex ]; }
+    {
+        return _vtServerInfo[ lIndex ];
+    }
 
     void Add( const PSERVERINFO psi )
-    { _vtServerInfo.push_back( psi ); }
+    {
+        _vtServerInfo.push_back( psi );
+    }
 
     void Remove( LONG lIndex )
     {
@@ -31,7 +35,9 @@ public :
     }
 
     const PSERVERINFO QueryServer( LONG lIndex ) const
-    { return _vtServerInfo[ lIndex ]; }
+    {
+        return _vtServerInfo[ lIndex ];
+    }
 
     void Replace( LONG lIndex, const PSERVERINFO psiNew )
     {
