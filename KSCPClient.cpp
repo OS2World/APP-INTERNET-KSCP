@@ -231,7 +231,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     MessageBox( szMsg, "Fingerprint", MB_OK | MB_INFORMATION );
 
-    if( !psi->fUsePublicKey )
+    if( psi->iAuth == 0 )
     {
         /* We could authenticate via password */
         if( libssh2_userauth_password( _session, psi->szUserName,
@@ -267,11 +267,11 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         char szPublicKey[ CCHMAXPATH ];
         char szPrivateKey[ CCHMAXPATH ];
 
-        snprintf( szPublicKey, sizeof( szPublicKey ), "%s/id_rsa.pub",
-                  szKeyDir );
+        snprintf( szPublicKey, sizeof( szPublicKey ), "%s/id_%s.pub",
+                  szKeyDir, psi->iAuth == 1 ? "rsa" : "dsa");
 
-        snprintf( szPrivateKey, sizeof( szPrivateKey ), "%s/id_rsa",
-                  szKeyDir );
+        snprintf( szPrivateKey, sizeof( szPrivateKey ), "%s/id_%s",
+                  szKeyDir, psi->iAuth == 1 ? "rsa" : "dsa");
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,

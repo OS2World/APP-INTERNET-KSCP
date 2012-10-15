@@ -56,12 +56,12 @@
 #define IDM_KSCP_DELETE     210
 #define IDM_KSCP_RENAME     211
 
-#define IDD_OPEN            1000
-#define IDCB_OPEN_ADDR      1001
-#define IDEF_OPEN_USERNAME  1002
-#define IDEF_OPEN_PASSWORD  1003
-#define IDEF_OPEN_DIRECTORY 1004
-#define IDCB_OPEN_PUBLICKEY 1005
+#define IDD_OPEN                    1000
+#define IDCB_OPEN_ADDR              1001
+#define IDEF_OPEN_USERNAME          1002
+#define IDEF_OPEN_PASSWORD          1003
+#define IDEF_OPEN_DIRECTORY         1004
+#define IDCB_OPEN_AUTHENTICATION    1005
 
 #define IDD_DOWNLOAD            1100
 #define IDT_DOWNLOAD_INDEX      1101

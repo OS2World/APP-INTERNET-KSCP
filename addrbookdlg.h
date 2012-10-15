@@ -49,7 +49,7 @@ typedef struct _SERVERINFO
     char szUserName[ 80 ];
     char szPassword[ 80 ];
     char szDir[ 512 ];
-    bool fUsePublicKey;
+    int  iAuth;
 } SERVERINFO, *PSERVERINFO;
 
 bool abDlg( KWindow*, PSERVERINFO );

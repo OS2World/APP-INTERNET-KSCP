@@ -65,17 +65,22 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
         KEntryField kefUserName;
         KEntryField kefPassword;
         KEntryField kefDir;
-        KButton     kbtnPublicKey;
+        KComboBox   kcbAuth;
 
         kdlg.WindowFromID( IDCB_OPEN_ADDR, kcbAddr );
         kdlg.WindowFromID( IDEF_OPEN_USERNAME, kefUserName );
         kdlg.WindowFromID( IDEF_OPEN_PASSWORD, kefPassword );
         kdlg.WindowFromID( IDEF_OPEN_DIRECTORY, kefDir );
-        kdlg.WindowFromID( IDCB_OPEN_PUBLICKEY, kbtnPublicKey );
+        kdlg.WindowFromID( IDCB_OPEN_AUTHENTICATION, kcbAuth );
 
         kefUserName.SetTextLimit( sizeof( psi->szUserName ));
         kefPassword.SetTextLimit( sizeof( psi->szPassword ));
         kefDir.SetTextLimit( sizeof( psi->szDir ));
+
+        kcbAuth.LmInsertItem( LIT_END, "Password");
+        kcbAuth.LmInsertItem( LIT_END, "Public key(RSA)");
+        kcbAuth.LmInsertItem( LIT_END, "Public key(DSA)");
+        kcbAuth.LmSelectItem( 0, TRUE );
 
         if( fSet )
         {
@@ -83,7 +88,7 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
             kefUserName.SetWindowText( psi->szUserName );
             kefPassword.SetWindowText( psi->szPassword );
             kefDir.SetWindowText( psi->szDir );
-            kbtnPublicKey.SetCheck( psi->fUsePublicKey );
+            kcbAuth.LmSelectItem( psi->iAuth, TRUE );
         }
 
         kdlg.ProcessDlg();
@@ -108,7 +113,7 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
             if( !len || psi->szDir[ len - 1 ] != '/')
                 strcat( psi->szDir, "/");
 
-            psi->fUsePublicKey = kbtnPublicKey.QueryCheck();
+            psi->iAuth = kcbAuth.LmQuerySelection( LIT_FIRST );
 
             if( !psi->szAddress[ 0 ])
                 ulReply = DID_CANCEL;
