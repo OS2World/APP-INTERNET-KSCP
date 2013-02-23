@@ -197,7 +197,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     if( connect( _sock, reinterpret_cast< struct sockaddr* >( &sin ),
                  sizeof( struct sockaddr_in )) != 0 )
     {
-        fprintf(stderr, "failed to connect!\n");
+        snprintf( szMsg, sizeof( szMsg ),
+                  "Failed to connect : %s", strerror( sock_errno()));
+        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -214,7 +216,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     rc = libssh2_session_handshake( _session, _sock );
     if(rc)
     {
-        fprintf( stderr, "Failure establishing SSH session: %d\n", rc );
+        snprintf( szMsg, sizeof( szMsg ),
+                  "Failed to establish SSH session : rc = %d\n", rc );
+        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
         goto exit_session_free;
     }
@@ -237,7 +241,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         if( libssh2_userauth_password( _session, psi->szUserName,
                                        psi->szPassword ))
         {
-            printf("Authentication by password failed.\n");
+            MessageBox("Authentication by password failed", "Connect",
+                       MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -280,7 +285,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                             szPrivateKey,
                             psi->szPassword ))
         {
-            printf("\tAuthentication by public key failed\n");
+            MessageBox("Authentication by public key failed", "Connect",
+                       MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -291,7 +297,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     if( !_sftp_session )
     {
-        fprintf( stderr, "Unable to init SFTP session\n");
+        MessageBox("Unable to init SFTP session", "Connect",
+                   MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
