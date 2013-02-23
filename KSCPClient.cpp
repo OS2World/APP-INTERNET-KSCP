@@ -38,8 +38,14 @@ bool KSCPClient::ReadDir( const char* dir )
 
     if (!sftp_handle)
     {
-        MessageBox("Unable to open dir with SFTP", "OpenDir",
-                   MB_OK | MB_ERROR );
+        char szMsg[ 512 ];
+        char *errmsg;
+
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ),
+                  "Unable to open dir with SFTP :\n%s", errmsg );
+
+        MessageBox( szMsg, "OpenDir",  MB_OK | MB_ERROR );
 
         return false;
     }
@@ -159,6 +165,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     struct sockaddr_in sin;
     const char*        fingerprint;
     char               szMsg[ 512 ];
+    char*              errmsg;
     struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
     FIELDINFOINSERT    fii;
@@ -184,7 +191,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     if( !host )
     {
         snprintf( szMsg, sizeof( szMsg ),
-                  "Cannot resolve host %s", psi->szAddress );
+                  "Cannot resolve host %s :\n%s",
+                  psi->szAddress, strerror( sock_errno()));
 
         MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
@@ -198,7 +206,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                  sizeof( struct sockaddr_in )) != 0 )
     {
         snprintf( szMsg, sizeof( szMsg ),
-                  "Failed to connect : %s", strerror( sock_errno()));
+                  "Failed to connect to %s :\n%s",
+                  psi->szAddress, strerror( sock_errno()));
         MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
         goto exit_close_socket;
@@ -216,8 +225,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     rc = libssh2_session_handshake( _session, _sock );
     if(rc)
     {
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         snprintf( szMsg, sizeof( szMsg ),
-                  "Failed to establish SSH session : rc = %d\n", rc );
+                  "Failed to establish SSH session :\n%s", errmsg );
         MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
         goto exit_session_free;
@@ -241,8 +251,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         if( libssh2_userauth_password( _session, psi->szUserName,
                                        psi->szPassword ))
         {
-            MessageBox("Authentication by password failed", "Connect",
-                       MB_OK | MB_ERROR );
+            libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+            snprintf( szMsg, sizeof( szMsg ),
+                      "Authentication by password failed :\n%s", errmsg );
+            MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -285,8 +297,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                             szPrivateKey,
                             psi->szPassword ))
         {
-            MessageBox("Authentication by public key failed", "Connect",
-                       MB_OK | MB_ERROR );
+            libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+            snprintf( szMsg, sizeof( szMsg ),
+                      "Authentication by public key failed :\n%s", errmsg );
+            MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -297,8 +311,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     if( !_sftp_session )
     {
-        MessageBox("Unable to init SFTP session", "Connect",
-                   MB_OK | MB_ERROR );
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ),
+                  "Unable to init SFTP session :\n%s", errmsg );
+        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
@@ -555,7 +571,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                                      LIBSSH2_FXF_READ, 0 );
     if( !sftp_handle )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s", sftppath );
+        char* errmsg;
+
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s :\n%s",
+                  sftppath, errmsg );
 
         MessageBox( szMsg, "Download", MB_OK | MB_ERROR );
 
@@ -583,7 +603,8 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     fp = fopen( buf, "wb");
     if( !fp )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s", buf );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s :\n%s",
+                  buf, strerror( errno ));
 
         MessageBox( szMsg ,"Download", MB_OK | MB_ERROR );
 
@@ -742,7 +763,8 @@ int KSCPClient::Upload( const char* pszName )
     fp = fopen( pszName, "rb");
     if( !fp )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s", pszName );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s :\n%s",
+                  pszName, strerror( errno ));
 
         MessageBox( szMsg , "Upload", MB_OK | MB_ERROR );
 
@@ -778,7 +800,11 @@ int KSCPClient::Upload( const char* pszName )
                                      LIBSSH2_SFTP_S_IROTH );
     if( !sftp_handle )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s", sftppath );
+        char* errmsg;
+
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s :\n%s",
+                  sftppath, errmsg );
 
         MessageBox( szMsg , "Upload", MB_OK | MB_ERROR );
 
@@ -938,7 +964,11 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
 
     if( libssh2_sftp_unlink( _sftp_session, sftppath ))
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot delete %s", sftppath );
+        char* errmsg;
+
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot delete %s :\n%s",
+                  sftppath, errmsg );
 
         MessageBox( szMsg, "Delete", MB_OK | MB_ERROR );
 
@@ -1015,8 +1045,11 @@ void KSCPClient::Rename( PKSCPRECORD pkr )
     if( strcmp( oldsftppath, newsftppath) &&
         libssh2_sftp_rename( _sftp_session, oldsftppath, newsftppath ))
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot rename %s to %s",
-                  pkr->mrc.pszIcon, pkr->pszName );
+        char* errmsg;
+
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+        snprintf( szMsg, sizeof( szMsg ), "Cannot rename %s to %s :\n%s",
+                  pkr->mrc.pszIcon, pkr->pszName, errmsg );
 
         MessageBox( szMsg , "Rename", MB_OK | MB_ERROR );
 
