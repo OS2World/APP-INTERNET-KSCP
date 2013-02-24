@@ -3,6 +3,7 @@
 #include <os2.h>
 
 #include <ctime>
+#include <sstream>
 #include <string>
 
 #include <sys/socket.h>
@@ -45,6 +46,152 @@ void KSCPClient::QuerySSHHome( string& strHome )
         strHome  = pszHome;
         strHome += "/.ssh";
     }
+}
+
+bool KSCPClient::CheckHostkey( PSERVERINFO psi )
+{
+    string              strKnownHostFile;
+    LIBSSH2_KNOWNHOSTS* nh;
+    struct              libssh2_knownhost* host;
+    int                 hostcount;
+    const char*         hostkey;
+    const char*         fingerprint;
+    size_t              hostkeylen;
+    int                 type;
+    int                 check;
+    char*               errmsg;
+    stringstream        sstMsg;
+    bool                rc = false;
+
+    hostkey = libssh2_session_hostkey( _session, &hostkeylen, &type );
+    if( !hostkey )
+    {
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+
+        sstMsg << "Failed to query a hostkey :" << endl
+               << errmsg;
+        MessageBox( sstMsg.str().c_str(), psi->szAddress, MB_OK | MB_ERROR );
+
+        return rc;
+    }
+
+    nh = libssh2_knownhost_init( _session );
+    if( !nh )
+    {
+        libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+
+        sstMsg << "Failed to initialize a known host :" << endl
+               << errmsg;
+        MessageBox( sstMsg.str().c_str(), psi->szAddress, MB_OK | MB_ERROR );
+
+        return rc;
+    }
+
+    QuerySSHHome( strKnownHostFile );
+
+    strKnownHostFile += "/known_hosts";
+    hostcount = libssh2_knownhost_readfile( nh, strKnownHostFile.c_str(),
+                                           LIBSSH2_KNOWNHOST_FILE_OPENSSH );
+
+    check = libssh2_knownhost_check( nh, psi->szAddress, hostkey, hostkeylen,
+                                     LIBSSH2_KNOWNHOST_TYPE_PLAIN |
+                                     LIBSSH2_KNOWNHOST_KEYENC_RAW, &host );
+
+    fingerprint = libssh2_hostkey_hash( _session, LIBSSH2_HOSTKEY_HASH_MD5 );
+    if( fingerprint )
+    {
+        for( int i = 0; i < 16; i++ )   // MD5 hash size is 16 bytes
+        {
+            sstMsg.width( 2 );
+            sstMsg.fill('0');
+            sstMsg << hex << uppercase
+                   << static_cast< unsigned >
+                        ( static_cast< unsigned char > ( fingerprint[ i ]));
+
+            sstMsg.width();
+            sstMsg << ":";
+        }
+        sstMsg << endl;
+    }
+
+    switch( check )
+    {
+        case LIBSSH2_KNOWNHOST_CHECK_FAILURE :
+            sstMsg << "Hostkey check failed." << endl
+                   << "Are you sure to continue connecting ?";
+            break;
+
+        case LIBSSH2_KNOWNHOST_CHECK_NOTFOUND :
+            sstMsg << "Hostkey not found." << endl
+                   << "Are you sure to accept this key "
+                   << "and to continue connecting ?";
+            break;
+
+        case LIBSSH2_KNOWNHOST_CHECK_MATCH :
+            rc = true;
+            break;
+
+        case LIBSSH2_KNOWNHOST_CHECK_MISMATCH :
+            sstMsg << "Hostkey mismatched." << endl
+                   << "This MAY be a HACKING." << endl
+                   << "If you want to continue to connecting, "
+                   << "remove a line for this host in your known host file, "
+                   << strKnownHostFile;
+
+            break;
+    }
+
+    if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH )
+        rc = MessageBox( sstMsg.str().c_str(),
+                         psi->szAddress,
+                         check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
+                            ( MB_YESNO | MB_QUERY ) :
+                            ( MB_OK | MB_WARNING )) == MBID_YES;
+
+    if( rc && check == LIBSSH2_KNOWNHOST_CHECK_NOTFOUND )
+    {
+        sstMsg.str("");
+
+        switch( type )
+        {
+            case LIBSSH2_HOSTKEY_TYPE_RSA :
+                type = LIBSSH2_KNOWNHOST_KEY_SSHRSA;
+                break;
+
+            case LIBSSH2_HOSTKEY_TYPE_DSS :
+                type =  LIBSSH2_KNOWNHOST_KEY_SSHDSS;
+                break;
+        }
+
+        if( libssh2_knownhost_addc( nh, psi->szAddress, NULL,
+                                    hostkey, hostkeylen, NULL, 0,
+                                    LIBSSH2_KNOWNHOST_TYPE_PLAIN |
+                                    LIBSSH2_KNOWNHOST_KEYENC_RAW |
+                                    type, NULL ))
+        {
+            libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+            sstMsg << "Failed to add a hostkey :" << endl
+                   << errmsg;
+
+            MessageBox( sstMsg.str().c_str(), psi->szAddress,
+                        MB_OK | MB_ERROR );
+        }
+        else if( libssh2_knownhost_writefile( nh, strKnownHostFile.c_str(),
+                                              LIBSSH2_KNOWNHOST_FILE_OPENSSH ))
+        {
+            libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+            sstMsg << "Failed to write to "
+                   << strKnownHostFile << " :" << endl
+                   << errmsg;
+
+            MessageBox( sstMsg.str().c_str(), psi->szAddress,
+                        MB_OK | MB_ERROR );
+        }
+    }
+
+    libssh2_knownhost_free( nh );
+
+    return rc;
 }
 
 bool KSCPClient::ReadDir( const char* dir )
@@ -186,14 +333,12 @@ bool KSCPClient::ReadDir( const char* dir )
 bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 {
     struct sockaddr_in sin;
-    const char*        fingerprint;
     char               szMsg[ 512 ];
     char*              errmsg;
     struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
     FIELDINFOINSERT    fii;
     CNRINFO            ci;
-    int                i;
     int                rc;
     RECTL              rcl;
 
@@ -261,12 +406,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
      * may have it hard coded, may go to a file, may present it to the
      * user, that's your call
      */
-    fingerprint = libssh2_hostkey_hash( _session,
-                                        LIBSSH2_HOSTKEY_HASH_SHA1 );
-    for( i = 0; i < 20; i++ )
-        sprintf( szMsg + i * 3 , "%02X ", ( unsigned char )fingerprint[ i ]);
-
-    MessageBox( szMsg, "Fingerprint", MB_OK | MB_INFORMATION );
+    if( !CheckHostkey( psi ))
+        goto exit_session_disconnect;
 
     if( psi->iAuth == 0 )
     {

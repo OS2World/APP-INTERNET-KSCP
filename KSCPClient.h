@@ -53,6 +53,7 @@ private :
     string              _strAddress;
 
     void QuerySSHHome( string& strHome );
+    bool CheckHostkey( PSERVERINFO psi );
     bool ReadDir( const char* dir );
     bool KSCPConnect( PSERVERINFO psi );
 
