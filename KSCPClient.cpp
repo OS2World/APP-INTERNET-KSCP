@@ -507,6 +507,20 @@ void KSCPClient::FileDlDir()
         _strDlDir = kdd.GetFullFile();
 }
 
+void KSCPClient::FileExit()
+{
+    if( _sock != -1 )
+    {
+        if( MessageBox("You have a connection.\n"\
+                       "Are you sure quit after disconnecting ?",
+                        _strAddress.c_str(), MB_YESNO | MB_QUERY ) !=
+            MBID_YES )
+            return;
+    }
+
+    PostMsg( WM_QUIT );
+}
+
 PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
                                     bool fWithDir )
 {
@@ -1281,6 +1295,14 @@ MRESULT KSCPClient::OnDestroy()
     return 0;
 }
 
+MRESULT KSCPClient::OnClose()
+{
+    PostMsg( WM_COMMAND, MPFROMSHORT( IDM_FILE_EXIT ),
+             MPFROM2SHORT( CMDSRC_MENU, FALSE ));
+
+    return 0;
+}
+
 MRESULT KSCPClient::OnControl( USHORT id, USHORT usNotifyCode,
                                ULONG ulControlSpec )
 {
@@ -1343,7 +1365,7 @@ MRESULT KSCPClient::CmdSrcMenu( USHORT usCmd, bool fPointer )
             break;
 
         case IDM_FILE_EXIT  :
-            PostMsg( WM_QUIT );
+            FileExit();
             break;
 
         case IDM_KSCP_DOWNLOAD :

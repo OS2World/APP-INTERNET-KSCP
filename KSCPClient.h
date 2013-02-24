@@ -20,6 +20,7 @@ public :
     virtual ~KSCPClient() {}
 
 protected :
+    virtual MRESULT OnClose();
     virtual MRESULT OnControl( USHORT id, USHORT usNotifyCode,
                                ULONG ulControlSpec );
     virtual MRESULT OnCreate( PVOID pCtrlData, PCREATESTRUCT pcs );
@@ -61,6 +62,7 @@ private :
     void FileClose();
     bool FileAddrBook();
     void FileDlDir();
+    void FileExit();
 
     PKSCPRECORD FindRecord( PKSCPRECORD pkrStart, ULONG ulEM, bool fWithDir );
     int         CountRecords( ULONG ulEM, bool fWithDir );
