@@ -322,6 +322,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     /* Since we have not set non-blocking, tell libssh2 we are blocking */
     libssh2_session_set_blocking( _session, 1 );
 
+    _strAddress = psi->szAddress;
+
     _kcnr.CreateWindow( this, NULL,
                        CCS_AUTOPOSITION | CCS_EXTENDSEL | CCS_MINIICONS,
                        0, 0, 0, 0, this, KWND_TOP, IDC_CONTAINER );
@@ -404,6 +406,7 @@ exit_close_socket :
     _sock = -1;
 
     _strCurDir.clear();
+    _strAddress.clear();
 
     return false;
 }
@@ -428,10 +431,18 @@ void KSCPClient::RemoveRecordAll()
     _kcnr.InvalidateRecord( 0, 0, CMA_REPOSITION );
 }
 
-void KSCPClient::KSCPDisconnect()
+void KSCPClient::KSCPDisconnect( bool fQuery )
 {
     if( _sock == -1 )
         return;
+
+    if( fQuery )
+    {
+        if( MessageBox("Are you sure to disconnect this session?",
+                       _strAddress.c_str(), MB_YESNO | MB_QUERY ) ==
+            MBID_NO )
+            return;
+    }
 
     RemoveRecordAll();
 
@@ -451,6 +462,7 @@ void KSCPClient::KSCPDisconnect()
     _sock = -1;
 
     _strCurDir.clear();
+    _strAddress.clear();
 }
 
 bool KSCPClient::FileOpen()
@@ -468,7 +480,7 @@ bool KSCPClient::FileOpen()
 
 void KSCPClient::FileClose()
 {
-    KSCPDisconnect();
+    KSCPDisconnect( true );
 }
 
 bool KSCPClient::FileAddrBook()
@@ -1224,6 +1236,7 @@ MRESULT KSCPClient::OnCreate( PVOID pCtrlData, PCREATESTRUCT pcs )
 
     _strCurDir.clear();
     _strDlDir.clear();
+    _strAddress.clear();
 
     if( DosLoadModule( szStr, sizeof( szStr ), "pmwp", &_hmodPMWP ))
     {

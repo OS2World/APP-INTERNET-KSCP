@@ -49,12 +49,13 @@ private :
     string              _strDlDir;
     bool                _fBusy;
     bool                _fCanceled;
+    string              _strAddress;
 
     bool ReadDir( const char* dir );
     bool KSCPConnect( PSERVERINFO psi );
 
     void RemoveRecordAll();
-    void KSCPDisconnect();
+    void KSCPDisconnect( bool fQuery = false );
 
     bool FileOpen();
     void FileClose();
