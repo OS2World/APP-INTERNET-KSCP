@@ -3,6 +3,7 @@
 #include <os2.h>
 
 #include <ctime>
+#include <string>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,6 +24,28 @@
 #define IDC_CONTAINER   1
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"
+
+void KSCPClient::QuerySSHHome( string& strHome )
+{
+    ULONG        ulBootDrive;
+
+    DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                     &ulBootDrive, sizeof( ulBootDrive ));
+
+    strHome  = static_cast< char >( ulBootDrive + 'A' - 1 );
+    strHome += ":/os2/.ssh";
+
+    struct stat statbuf;
+    if( stat( strHome.c_str(), &statbuf ) || !S_ISDIR( statbuf.st_mode ))
+    {
+        const char* pszHome = getenv("HOME");
+        if( !pszHome )
+            pszHome = ".";
+
+        strHome  = pszHome;
+        strHome += "/.ssh";
+    }
+}
 
 bool KSCPClient::ReadDir( const char* dir )
 {
@@ -261,34 +284,18 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     }
     else
     {
-        ULONG ulBootDrive;
+        string strHome;
 
-        DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
-                         &ulBootDrive, sizeof( ulBootDrive ));
-
-        char szKeyDir[ CCHMAXPATH ];
-
-        snprintf( szKeyDir, sizeof( szKeyDir ), "%c:/os2/.ssh",
-                  static_cast< char >( ulBootDrive + 'A' - 1 ));
-
-        struct stat statbuf;
-        if( stat( szKeyDir, &statbuf ) || !S_ISDIR( statbuf.st_mode ))
-        {
-            const char* pszHome = getenv("HOME");
-            if( !pszHome )
-                pszHome = ".";
-
-            snprintf( szKeyDir, sizeof( szKeyDir ), "%s/.ssh", pszHome );
-        }
+        QuerySSHHome( strHome );
 
         char szPublicKey[ CCHMAXPATH ];
         char szPrivateKey[ CCHMAXPATH ];
 
         snprintf( szPublicKey, sizeof( szPublicKey ), "%s/id_%s.pub",
-                  szKeyDir, psi->iAuth == 1 ? "rsa" : "dsa");
+                  strHome.c_str(), psi->iAuth == 1 ? "rsa" : "dsa");
 
         snprintf( szPrivateKey, sizeof( szPrivateKey ), "%s/id_%s",
-                  szKeyDir, psi->iAuth == 1 ? "rsa" : "dsa");
+                  strHome.c_str(), psi->iAuth == 1 ? "rsa" : "dsa");
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,

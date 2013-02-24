@@ -52,6 +52,7 @@ private :
     bool                _fCanceled;
     string              _strAddress;
 
+    void QuerySSHHome( string& strHome );
     bool ReadDir( const char* dir );
     bool KSCPConnect( PSERVERINFO psi );
 
