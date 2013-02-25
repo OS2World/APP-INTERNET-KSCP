@@ -1361,6 +1361,8 @@ MRESULT KSCPClient::CnEdit( USHORT usNotifyCode, ULONG ulParam )
     switch( usNotifyCode )
     {
         case CN_BEGINEDIT :
+            _fCnrEditing = true;
+
             if( !strcmp(  pkr->pszName, ".."))
                 _kcnr.CloseEditP();
             break;
@@ -1381,6 +1383,8 @@ MRESULT KSCPClient::CnEdit( USHORT usNotifyCode, ULONG ulParam )
             // call Rename(). Otherwise it causes double-free memory
             if( pkr->pszName != pkr->mrc.pszIcon )
                 Rename( pkr );
+
+            _fCnrEditing = false;
             break;
     }
 
@@ -1396,6 +1400,7 @@ MRESULT KSCPClient::OnCreate( PVOID pCtrlData, PCREATESTRUCT pcs )
     _sftp_session = 0;
     _fBusy        = false;
     _fCanceled    = false;
+    _fCnrEditing  = false;
 
     _strCurDir.clear();
     _strDlDir.clear();
@@ -1491,6 +1496,14 @@ MRESULT KSCPClient::OnSize( SHORT scxOld, SHORT scyOld,
     _kcnr.SetWindowPos( KWND_TOP, 0, 0, scxNew, scyNew, SWP_SIZE );
 
     return MRFROMLONG( true );
+}
+
+MRESULT KSCPClient::OnTranslateAccel( PQMSG pqmsg )
+{
+    if( _fCnrEditing )
+        return false;
+
+    return KWindow::OnTranslateAccel( pqmsg );
 }
 
 MRESULT KSCPClient::CmdSrcMenu( USHORT usCmd, bool fPointer )

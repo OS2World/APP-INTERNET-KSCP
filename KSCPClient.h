@@ -28,6 +28,7 @@ protected :
     virtual MRESULT OnPaint();
     virtual MRESULT OnSize( SHORT scxOld, SHORT scyOld,
                             SHORT scxNew, SHORT scyNew );
+    virtual MRESULT OnTranslateAccel( PQMSG pqmsg );
 
     virtual MRESULT CmdSrcMenu( USHORT usCmd, bool fPointer );
     virtual MRESULT CmdSrcAccelerator( USHORT usCmd, bool fPointer );
@@ -51,6 +52,7 @@ private :
     bool                _fBusy;
     bool                _fCanceled;
     string              _strAddress;
+    bool                _fCnrEditing;
 
     void QuerySSHHome( string& strHome );
     bool CheckHostkey( PSERVERINFO psi );
