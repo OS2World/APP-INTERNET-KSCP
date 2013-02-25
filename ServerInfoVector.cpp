@@ -1,6 +1,8 @@
 #define INCL_WIN
 #include <os2.h>
 
+#include <sstream>
+
 #include "kscp.h"
 
 #include "ServerInfoVector.h"
@@ -18,11 +20,11 @@ ServerInfoVector::~ServerInfoVector()
 
 void ServerInfoVector::Load()
 {
-    PSERVERINFO psi;
-    ULONG       ulBufMax;
-    LONG        lCount = 0;
-    char        szKey[ 10 ];
-    int         i;
+    PSERVERINFO  psi;
+    ULONG        ulBufMax;
+    LONG         lCount = 0;
+    stringstream sstKey;
+    int          i;
 
     ulBufMax = sizeof( lCount );
     PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
@@ -30,14 +32,14 @@ void ServerInfoVector::Load()
 
     for( i = 0; i < lCount; i++ )
     {
-        snprintf( szKey, sizeof( szKey ), "%s%d",
-                  KSCP_PRF_KEY_SERVER_BASE, i );
+        sstKey.str("");
+        sstKey << KSCP_PRF_KEY_SERVER_BASE << i;
 
         psi = new SERVERINFO;
 
         ulBufMax = sizeof( *psi );
-        PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey, psi,
-                             &ulBufMax );
+        PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                             sstKey.str().c_str(), psi, &ulBufMax );
 
         Add( psi );
     }
@@ -45,8 +47,8 @@ void ServerInfoVector::Load()
 
 void ServerInfoVector::Save()
 {
-    LONG lCount = _vtServerInfo.size();
-    char szKey[ 10 ];
+    LONG         lCount = _vtServerInfo.size();
+    stringstream sstKey;
 
     PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
                          KSCP_PRF_KEY_SERVER_COUNT, &lCount,
@@ -54,11 +56,12 @@ void ServerInfoVector::Save()
 
     for( int i = 0; i < lCount; ++i )
     {
-        snprintf( szKey, sizeof( szKey ), "%s%d",
-                  KSCP_PRF_KEY_SERVER_BASE, i );
+        sstKey.str("");
+        sstKey << KSCP_PRF_KEY_SERVER_BASE << i;
 
-        PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP, szKey,
-                             QueryServer( i ), sizeof( SERVERINFO ));
+        PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
+                             sstKey.str().c_str(), QueryServer( i ),
+                             sizeof( SERVERINFO ));
     }
 }
 

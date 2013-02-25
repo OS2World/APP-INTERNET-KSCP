@@ -2,6 +2,8 @@
 #define INCL_DOS
 #include <os2.h>
 
+#include <iostream>
+
 #include <ctime>
 #include <sstream>
 #include <string>
@@ -202,24 +204,24 @@ bool KSCPClient::ReadDir( const char* dir )
     ULONG                ulStyle;
     int                  rc;
 
-    fprintf( stderr, "libssh2_sftp_opendir()!\n");
+    cerr << "libssh2_sftp_opendir()!" << endl;
     /* Request a dir listing via SFTP */
     sftp_handle = libssh2_sftp_opendir( _sftp_session, dir );
 
     if (!sftp_handle)
     {
-        char szMsg[ 512 ];
+        stringstream sstMsg;
         char *errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ),
-                  "Unable to open dir with SFTP :\n%s", errmsg );
+        sstMsg << "Unable to open dir with SFTP :" << endl
+               << errmsg;
 
-        MessageBox( szMsg, "OpenDir",  MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "OpenDir",  MB_OK | MB_ERROR );
 
         return false;
     }
-    fprintf( stderr, "libssh2_sftp_opendir() is done, now receive listing!\n");
+    cerr << "libssh2_sftp_opendir() is done, now receive listing!" << endl;
     while( 1 )
     {
         char mem[ 512 ];
@@ -333,7 +335,7 @@ bool KSCPClient::ReadDir( const char* dir )
 bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 {
     struct sockaddr_in sin;
-    char               szMsg[ 512 ];
+    stringstream       sstMsg;
     char*              errmsg;
     struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
@@ -358,11 +360,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     host = gethostbyname( psi->szAddress );
     if( !host )
     {
-        snprintf( szMsg, sizeof( szMsg ),
-                  "Cannot resolve host %s :\n%s",
-                  psi->szAddress, strerror( sock_errno()));
+        sstMsg << "Cannot resolve host " << psi->szAddress << " :" << endl
+               << strerror( sock_errno());
 
-        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -373,10 +374,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     if( connect( _sock, reinterpret_cast< struct sockaddr* >( &sin ),
                  sizeof( struct sockaddr_in )) != 0 )
     {
-        snprintf( szMsg, sizeof( szMsg ),
-                  "Failed to connect to %s :\n%s",
-                  psi->szAddress, strerror( sock_errno()));
-        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+        sstMsg << "Failed to connect to " << psi->szAddress << " :" << endl
+               << strerror( sock_errno());
+
+        MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -394,9 +395,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     if(rc)
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ),
-                  "Failed to establish SSH session :\n%s", errmsg );
-        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+        sstMsg << "Failed to establish SSH session :" << endl
+               << errmsg;
+        MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
         goto exit_session_free;
     }
@@ -416,9 +417,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                                        psi->szPassword ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            snprintf( szMsg, sizeof( szMsg ),
-                      "Authentication by password failed :\n%s", errmsg );
-            MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+            sstMsg << "Authentication by password failed :" << endl
+                   << errmsg;
+            MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -429,40 +430,41 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
         QuerySSHHome( strHome );
 
-        char szPublicKey[ CCHMAXPATH ];
-        char szPrivateKey[ CCHMAXPATH ];
+        stringstream sstPublicKey;
+        stringstream sstPrivateKey;
 
-        snprintf( szPublicKey, sizeof( szPublicKey ), "%s/id_%s.pub",
-                  strHome.c_str(), psi->iAuth == 1 ? "rsa" : "dsa");
+        sstPublicKey << strHome << "/id_"
+                     << ( psi->iAuth == 1 ? "rsa" : "dsa")
+                     << ".pub";
 
-        snprintf( szPrivateKey, sizeof( szPrivateKey ), "%s/id_%s",
-                  strHome.c_str(), psi->iAuth == 1 ? "rsa" : "dsa");
+        sstPrivateKey << strHome << "/id_"
+                      << ( psi->iAuth == 1 ? "rsa" : "dsa" );
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,
                             psi->szUserName,
-                            szPublicKey,
-                            szPrivateKey,
+                            sstPublicKey.str().c_str(),
+                            sstPrivateKey.str().c_str(),
                             psi->szPassword ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            snprintf( szMsg, sizeof( szMsg ),
-                      "Authentication by public key failed :\n%s", errmsg );
-            MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+            sstMsg << "Authentication by public key failed :" << endl
+                   << errmsg;
+            MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
     }
 
-    fprintf( stderr, "libssh2_sftp_init()!\n");
+    cerr << "libssh2_sftp_init()!" << endl;
     _sftp_session = libssh2_sftp_init( _session );
 
     if( !_sftp_session )
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ),
-                  "Unable to init SFTP session :\n%s", errmsg );
-        MessageBox( szMsg, "Connect", MB_OK | MB_ERROR );
+        sstMsg << "Unable to init SFTP session :" << endl
+               << errmsg;
+        MessageBox( sstMsg.str().c_str(), "Connect", MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
@@ -725,33 +727,32 @@ void KSCPClient::Refresh()
 int KSCPClient::Download( PKSCPRECORD pkr )
 {
     LIBSSH2_SFTP_HANDLE*     sftp_handle;
-    char                     sftppath[ 512 ];
+    string                   strSFTPPath;
     LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
     struct stat       statbuf;
     FILE*             fp;
     char*             buf;
     libssh2_uint64_t  size;
-    char              szMsg[ 512 ];
+    stringstream      sstMsg;
 
     struct timeval tv1, tv2;
     long long      diffTime;
 
     int rc = 1;
 
-    snprintf( sftppath, sizeof( sftppath ), "%s%s",
-              _strCurDir.c_str(), pkr->pszName );
-    sftp_handle = libssh2_sftp_open( _sftp_session, sftppath,
+    strSFTPPath = _strCurDir + pkr->pszName;
+    sftp_handle = libssh2_sftp_open( _sftp_session, strSFTPPath.c_str(),
                                      LIBSSH2_FXF_READ, 0 );
     if( !sftp_handle )
     {
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s :\n%s",
-                  sftppath, errmsg );
+        sstMsg << "Cannot open " << strSFTPPath << " :" << endl
+               << errmsg;
 
-        MessageBox( szMsg, "Download", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Download", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -765,10 +766,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     {
         ULONG ulReply;
 
-        snprintf( szMsg, sizeof( szMsg ),
-                  "%s\nalready exists. Overwrite ?", buf );
+        sstMsg << buf << endl
+               << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( szMsg, "Download", MB_YESNO | MB_ICONQUESTION );
+        ulReply = MessageBox( sstMsg.str().c_str(), "Download",
+                              MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
             goto exit_free;
@@ -777,10 +779,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     fp = fopen( buf, "wb");
     if( !fp )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s :\n%s",
-                  buf, strerror( errno ));
+        sstMsg.str("");
+        sstMsg << "Cannot create " << buf << " :" << endl
+               << strerror( errno );
 
-        MessageBox( szMsg ,"Download", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Download", MB_OK | MB_ERROR );
 
         goto exit_free;
     }
@@ -791,11 +794,12 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
         for( size = diffTime = 0; !_fCanceled; )
         {
-            sprintf( szMsg, "%lld KB of %lld KB (%lld%%)",
-                     size / 1024, pattr->filesize / 1024,
-                     size * 100 / pattr->filesize );
+            sstMsg.str("");
+            sstMsg << size / 1024 << " KB of "
+                   << pattr->filesize / 1024 << " KB ("
+                   << size * 100 / pattr->filesize << "%)";
 
-            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, szMsg );
+            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, sstMsg.str().c_str());
 
             gettimeofday( &tv1, NULL );
             /* read in a loop until we block */
@@ -814,9 +818,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
             if( diffTime )
             {
-                sprintf( szMsg, "%lld KB/s",
-                         ( size * 1000000LL / 1024 ) / diffTime );
-                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, szMsg );
+                sstMsg.str("");
+                sstMsg << ( size * 1000000LL / 1024 ) / diffTime
+                       << " KB/s";
+                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
+                                      sstMsg.str().c_str());
             }
         }
     }
@@ -837,7 +843,8 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
 {
     PKSCPRECORD pkr;
 
-    char szMsg[ 512 ];
+    stringstream sstMsg;
+
     int  count;
     int  i;
 
@@ -851,8 +858,9 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
         if( !pkr )
             break;
 
-        sprintf( szMsg, "%d of %d", i, count );
-        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  szMsg );
+        sstMsg.str("");
+        sstMsg << i << " of " << count;
+        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, sstMsg.str().c_str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, pkr->pszName );
 
         ( this->*pCallback )( pkr );
@@ -865,7 +873,8 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
 
 int KSCPClient::KSCPDownload()
 {
-    char  szMsg[ 100 ];
+    stringstream sstMsg;
+
     ULONG ulReply;
 
     if( _fBusy )
@@ -898,10 +907,10 @@ int KSCPClient::KSCPDownload()
 
     _kdlg.DestroyWindow();
 
-    sprintf( szMsg, "Download %s",
-             ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    sstMsg << "Download "
+           << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( szMsg, "Download", MB_OK | MB_INFORMATION );
+    MessageBox( sstMsg.str().c_str(), "Download", MB_OK | MB_INFORMATION );
 
     return 0;
 }
@@ -909,13 +918,13 @@ int KSCPClient::KSCPDownload()
 int KSCPClient::Upload( const char* pszName )
 {
     LIBSSH2_SFTP_HANDLE*    sftp_handle;
-    char                    sftppath[ 512 ];
+    string                  strSFTPPath;
     LIBSSH2_SFTP_ATTRIBUTES sftp_attrs;
 
-    FILE* fp;
-    off_t size, fileSize;
-    char* buf;
-    char  szMsg[ 512 ];
+    FILE*        fp;
+    off_t        size, fileSize;
+    char*        buf;
+    stringstream sstMsg;
 
     struct stat statbuf;
 
@@ -926,10 +935,10 @@ int KSCPClient::Upload( const char* pszName )
 
     if( stat( pszName, &statbuf ) < 0 || !S_ISREG( statbuf.st_mode ))
     {
-        snprintf( szMsg, sizeof( szMsg ),
-                 "Ooops... This is not a file. Ignored.\n%s", pszName );
+        sstMsg << "Ooops... This is not a file. Ignored." << endl
+               << pszName;
 
-        MessageBox( szMsg , "Upload", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -937,10 +946,10 @@ int KSCPClient::Upload( const char* pszName )
     fp = fopen( pszName, "rb");
     if( !fp )
     {
-        snprintf( szMsg, sizeof( szMsg ), "Cannot open %s :\n%s",
-                  pszName, strerror( errno ));
+        sstMsg << "Cannot open " << pszName << " :" << endl
+               << strerror( errno );
 
-        MessageBox( szMsg , "Upload", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -949,23 +958,22 @@ int KSCPClient::Upload( const char* pszName )
     fileSize = ftello( fp );
     fseeko( fp, 0, SEEK_SET );
 
-    snprintf( sftppath, sizeof( sftppath ), "%s%s",
-              _strCurDir.c_str(), strrchr( pszName, '\\') + 1 );
-
-    if( !libssh2_sftp_stat( _sftp_session, sftppath, &sftp_attrs ))
+    strSFTPPath = _strCurDir + ( strrchr( pszName, '\\') + 1 );
+    if( !libssh2_sftp_stat( _sftp_session, strSFTPPath.c_str(), &sftp_attrs ))
     {
         ULONG ulReply;
 
-        snprintf( szMsg, sizeof( szMsg ),
-                  "%s\nalready exists. Overwrite ?", sftppath );
+        sstMsg << strSFTPPath << endl
+               << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( szMsg , "Upload", MB_YESNO | MB_ICONQUESTION );
+        ulReply = MessageBox( sstMsg.str().c_str() , "Upload",
+                              MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
             goto exit_fclose;
     }
 
-    sftp_handle = libssh2_sftp_open( _sftp_session, sftppath,
+    sftp_handle = libssh2_sftp_open( _sftp_session, strSFTPPath.c_str(),
                                      LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT |
                                      LIBSSH2_FXF_TRUNC,
                                      LIBSSH2_SFTP_S_IRUSR |
@@ -977,10 +985,11 @@ int KSCPClient::Upload( const char* pszName )
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ), "Cannot create %s :\n%s",
-                  sftppath, errmsg );
+        sstMsg.str("");
+        sstMsg << "Cannot create " << strSFTPPath << " :" << endl
+               << errmsg;
 
-        MessageBox( szMsg , "Upload", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Upload", MB_OK | MB_ERROR );
 
         goto exit_fclose;
     }
@@ -994,11 +1003,12 @@ int KSCPClient::Upload( const char* pszName )
 
         for( size = diffTime = 0; !_fCanceled; )
         {
-            sprintf( szMsg, "%lld KB of %lld KB (%lld%%)",
-                     size / 1024, fileSize / 1024,
-                     size * 100 / fileSize );
+            sstMsg.str("");
+            sstMsg << size / 1024 << " KB of "
+                   << fileSize / 1024 << " KB ("
+                   << size * 100 / fileSize << "%)";
 
-            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, szMsg );
+            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, sstMsg.str().c_str());
 
             nRead = fread( buf, 1, BUF_SIZE, fp );
             if( nRead <= 0 )
@@ -1025,19 +1035,21 @@ int KSCPClient::Upload( const char* pszName )
 
             if( nRead )
             {
-                snprintf( szMsg, sizeof( szMsg ),
-                          "Ooops... Error occurs while uploading\n%s",
-                          pszName );
-                MessageBox( szMsg , "Upload",
-                                          MB_OK | MB_ERROR );
+                sstMsg.str("");
+                sstMsg << "Ooops... Error occurs while uploading" << endl
+                       << pszName;
+                MessageBox( sstMsg.str().c_str(), "Upload",
+                            MB_OK | MB_ERROR );
                 goto exit_free;
             }
 
             if( diffTime )
             {
-                sprintf( szMsg, "%lld KB/s",
-                         ( size * 1000000LL / 1024 ) / diffTime );
-                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, szMsg );
+                sstMsg.str("");
+                sstMsg << ( size * 1000000LL / 1024 ) / diffTime
+                       << " KB/s";
+                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
+                                      sstMsg.str().c_str());
             }
         }
     }
@@ -1061,8 +1073,8 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
     PAPSZ papszList = _kfd.GetFQFilename();
     ULONG ulCount   = _kfd.GetFQFCount();
 
-    char     szMsg[ 100 ];
-    unsigned i;
+    stringstream sstMsg;
+    unsigned     i;
 
     _fBusy = true;
 
@@ -1071,8 +1083,9 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
 
     for( i = 0; i < ulCount && !_fCanceled; i++ )
     {
-        sprintf( szMsg, "%d of %ld", i + 1, ulCount );
-        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  szMsg );
+        sstMsg.str("");
+        sstMsg << i + 1 << " of " << ulCount;
+        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  sstMsg.str().c_str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, (*papszList)[ i ]);
         (this->*pCallback)((*papszList)[ i ]);
     }
@@ -1084,8 +1097,8 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
 
 int KSCPClient::KSCPUpload()
 {
-    char       szMsg[ 100 ];
-    ULONG      ulReply;
+    stringstream sstMsg;
+    ULONG        ulReply;
 
     if( _fBusy )
     {
@@ -1118,10 +1131,10 @@ int KSCPClient::KSCPUpload()
 
     _kdlg.DestroyWindow();
 
-    sprintf( szMsg, "Upload %s",
-             ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    sstMsg << "Upload "
+           << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( szMsg, "Upload", MB_OK | MB_INFORMATION );
+    MessageBox( sstMsg.str().c_str(), "Upload", MB_OK | MB_INFORMATION );
 
     Refresh();
 
@@ -1130,21 +1143,19 @@ int KSCPClient::KSCPUpload()
 
 int KSCPClient::Delete( PKSCPRECORD pkr )
 {
-    char sftppath[ 512 ];
-    char szMsg[ 512 ];
+    string       strSFTPPath;
+    stringstream sstMsg;
 
-    snprintf( sftppath, sizeof( sftppath ), "%s%s",
-              _strCurDir.c_str(), pkr->pszName );
-
-    if( libssh2_sftp_unlink( _sftp_session, sftppath ))
+    strSFTPPath = _strCurDir + pkr->pszName;
+    if( libssh2_sftp_unlink( _sftp_session, strSFTPPath.c_str()))
     {
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ), "Cannot delete %s :\n%s",
-                  sftppath, errmsg );
+        sstMsg << "Cannot delete " << strSFTPPath << " :" << endl
+               << errmsg;
 
-        MessageBox( szMsg, "Delete", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str(), "Delete", MB_OK | MB_ERROR );
 
         return 1;
     }
@@ -1154,8 +1165,8 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
 
 int KSCPClient::KSCPDelete()
 {
-    char  szMsg[ 100 ];
-    ULONG ulReply;
+    stringstream sstMsg;
+    ULONG        ulReply;
 
     if( _fBusy )
     {
@@ -1195,10 +1206,10 @@ int KSCPClient::KSCPDelete()
 
     _kdlg.DestroyWindow();
 
-    sprintf( szMsg, "Delete %s",
-             ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    sstMsg << "Delete "
+           << (ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( szMsg, "Delete", MB_OK | MB_INFORMATION );
+    MessageBox( sstMsg.str().c_str(), "Delete", MB_OK | MB_INFORMATION );
 
     Refresh();
 
@@ -1207,25 +1218,23 @@ int KSCPClient::KSCPDelete()
 
 void KSCPClient::Rename( PKSCPRECORD pkr )
 {
-    char oldsftppath[ 512 ], newsftppath[ 512 ];
-    char szMsg[ 512 ];
+    string       strOldSFTPPath, strNewSFTPPath;
+    stringstream sstMsg;
 
-    snprintf( oldsftppath, sizeof( oldsftppath ), "%s%s",
-              _strCurDir.c_str(), pkr->mrc.pszIcon );
-
-    snprintf( newsftppath, sizeof( newsftppath ), "%s%s",
-              _strCurDir.c_str(), pkr->pszName );
-
-    if( strcmp( oldsftppath, newsftppath) &&
-        libssh2_sftp_rename( _sftp_session, oldsftppath, newsftppath ))
+    strOldSFTPPath = _strCurDir + pkr->mrc.pszIcon;
+    strNewSFTPPath = _strCurDir + pkr->pszName;
+    if( strOldSFTPPath != strNewSFTPPath &&
+        libssh2_sftp_rename( _sftp_session,
+                             strOldSFTPPath.c_str(), strNewSFTPPath.c_str()))
     {
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        snprintf( szMsg, sizeof( szMsg ), "Cannot rename %s to %s :\n%s",
-                  pkr->mrc.pszIcon, pkr->pszName, errmsg );
+        sstMsg << "Cannot rename " << pkr->mrc.pszIcon
+               << " to " << pkr->pszName << " :" << endl
+               << errmsg;
 
-        MessageBox( szMsg , "Rename", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str().c_str() , "Rename", MB_OK | MB_ERROR );
 
         delete[] pkr->pszName;
         pkr->pszName = pkr->mrc.pszIcon;

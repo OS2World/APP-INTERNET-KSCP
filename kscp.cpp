@@ -39,7 +39,7 @@
 #define INCL_WIN
 #include <os2.h>
 
-#include <stdio.h>
+#include <sstream>
 
 #include <KPMLib.h>
 
@@ -56,13 +56,13 @@ int KSCP::Run()
     rc = libssh2_init( 0 );
     if( rc != 0 )
     {
-        char szMsg[ 80 ];
+        stringstream sstMsg;
 
-        snprintf( szMsg, sizeof( szMsg ),
-                  "libssh2 initialization failed : rc = %d", rc );
+        sstMsg << "libssh2 initialization failed : rc = " << rc;
 
         WinMessageBox( HWND_DESKTOP, HWND_DESKTOP,
-                       szMsg, "KSCP", 0xFFFF, MB_OK | MB_ERROR );
+                       sstMsg.str().c_str(), "KSCP", 0xFFFF,
+                       MB_OK | MB_ERROR );
 
         return 1;
     }
