@@ -196,7 +196,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
     return rc;
 }
 
-bool KSCPClient::ReadDir( const char* dir )
+bool KSCPClient::ReadDir( const string& strDir )
 {
     LIBSSH2_SFTP_HANDLE* sftp_handle;
     PKSCPRECORD          pkr;
@@ -206,7 +206,7 @@ bool KSCPClient::ReadDir( const char* dir )
 
     cerr << "libssh2_sftp_opendir()!" << endl;
     /* Request a dir listing via SFTP */
-    sftp_handle = libssh2_sftp_opendir( _sftp_session, dir );
+    sftp_handle = libssh2_sftp_opendir( _sftp_session, strDir.c_str());
 
     if (!sftp_handle)
     {
@@ -719,7 +719,7 @@ void KSCPClient::Refresh()
 {
     RemoveRecordAll();
 
-    ReadDir( _strCurDir.c_str());
+    ReadDir( _strCurDir );
 }
 
 #define BUF_SIZE    ( 1024 * 4 )
@@ -1324,31 +1324,29 @@ MRESULT KSCPClient::CnEnter( ULONG ulParam )
     pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
     if( LIBSSH2_SFTP_S_ISDIR( pattr->permissions ))
     {
-        char* pszNewDir = NULL;
+        string strNewDir;
 
         if( strcmp( pkr->pszName, ".."))
-            asprintf( &pszNewDir, "%s%s/", _strCurDir.c_str(), pkr->pszName );
+            strNewDir = _strCurDir + pkr->pszName + "/";
         else if( _strCurDir[ 1 ]) // not root ?
         {
             // remove the last '/'
-           _strCurDir[ _strCurDir.length() - 1 ] = '\0';
+           _strCurDir.erase( _strCurDir.end() - 1 );
 
             // remove the last directory part
-            _strCurDir[ _strCurDir.find_last_of('/') + 1 ] = '\0';
+            _strCurDir.erase( _strCurDir.find_last_of('/') + 1 );
 
-            pszNewDir = strdup( _strCurDir.c_str() );
+            strNewDir = _strCurDir;
         }
 
-        if( pszNewDir )
+        if( !strNewDir.empty())
         {
             RemoveRecordAll();
 
-            if( !ReadDir( pszNewDir ))
-                ReadDir( _strCurDir.c_str() );
+            if( !ReadDir( strNewDir ))
+                ReadDir( _strCurDir );
             else
-                _strCurDir = pszNewDir;
-
-            free( pszNewDir );
+                _strCurDir = strNewDir;
         }
     }
     else

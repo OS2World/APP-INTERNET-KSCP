@@ -54,7 +54,7 @@ private :
 
     void QuerySSHHome( string& strHome );
     bool CheckHostkey( PSERVERINFO psi );
-    bool ReadDir( const char* dir );
+    bool ReadDir( const string& strDir );
     bool KSCPConnect( PSERVERINFO psi );
 
     void RemoveRecordAll();
