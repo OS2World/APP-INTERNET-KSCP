@@ -34,7 +34,7 @@ MRESULT KAddrBookDlg::OnInitDlg( HWND hwndFocus, PVOID pCreate )
     _psiResult = reinterpret_cast< PSERVERINFO >( pCreate );
 
     for( int i = 0; i < _siv.Count(); ++i )
-        _klbServers.InsertItem( LIT_END, _siv.QueryServer( i )->szAddress );
+        _klbServers.InsertItem( LIT_END, _siv.QueryServer( i )->strAddress );
 
     ulBufMax = sizeof( fShow );
     PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
@@ -105,9 +105,9 @@ void KAddrBookDlg::Add()
 
     if( getServerInfo( this, psi, false ))
     {
-        if( psi->szAddress[ 0 ])
+        if( psi->strAddress[ 0 ])
         {
-            _klbServers.InsertLboxItem( LIT_END, psi->szAddress );
+            _klbServers.InsertLboxItem( LIT_END, psi->strAddress );
             _siv.Add( psi );
 
             return;
@@ -143,9 +143,9 @@ void KAddrBookDlg::Edit()
         *psiTemp = *_siv.Search( lIndex );
         if( getServerInfo( this, psiTemp, true ))
         {
-            if( psiTemp->szAddress[ 0 ])
+            if( psiTemp->strAddress[ 0 ])
             {
-                _klbServers.SetLboxItemText( lIndex, psiTemp->szAddress );
+                _klbServers.SetLboxItemText( lIndex, psiTemp->strAddress );
 
                 _siv.Replace( lIndex, psiTemp );
 

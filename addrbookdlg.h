@@ -39,17 +39,24 @@
 #ifndef ADDRBOOKDLG_H
 #define ADDRBOOKDLG_H
 
+#include <string>
+
 #include <KWindow.h>
 
 #define KSCP_PRF_KEY_SHOW   "SHOW"
 
+#define MAX_ADDRESS_LEN     256
+#define MAX_USERNAME_LEN    80
+#define MAX_PASSWORD_LEN    80
+#define MAX_DIR_LEN         512
+
 typedef struct _SERVERINFO
 {
-    char szAddress[ 256 ];
-    char szUserName[ 80 ];
-    char szPassword[ 80 ];
-    char szDir[ 512 ];
-    int  iAuth;
+    string strAddress;
+    string strUserName;
+    string strPassword;
+    string strDir;
+    int    iAuth;
 } SERVERINFO, *PSERVERINFO;
 
 bool abDlg( KWindow*, PSERVERINFO );

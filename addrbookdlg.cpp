@@ -73,9 +73,9 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
         kdlg.WindowFromID( IDEF_OPEN_DIRECTORY, kefDir );
         kdlg.WindowFromID( IDCB_OPEN_AUTHENTICATION, kcbAuth );
 
-        kefUserName.SetTextLimit( sizeof( psi->szUserName ));
-        kefPassword.SetTextLimit( sizeof( psi->szPassword ));
-        kefDir.SetTextLimit( sizeof( psi->szDir ));
+        kefUserName.SetTextLimit( MAX_USERNAME_LEN );
+        kefPassword.SetTextLimit( MAX_PASSWORD_LEN );
+        kefDir.SetTextLimit( MAX_DIR_LEN );
 
         kcbAuth.LmInsertItem( LIT_END, "Password");
         kcbAuth.LmInsertItem( LIT_END, "Public key(RSA)");
@@ -84,10 +84,10 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
 
         if( fSet )
         {
-            kcbAddr.SetWindowText( psi->szAddress );
-            kefUserName.SetWindowText( psi->szUserName );
-            kefPassword.SetWindowText( psi->szPassword );
-            kefDir.SetWindowText( psi->szDir );
+            kcbAddr.SetWindowText( psi->strAddress );
+            kefUserName.SetWindowText( psi->strUserName );
+            kefPassword.SetWindowText( psi->strPassword );
+            kefDir.SetWindowText( psi->strDir );
             kcbAuth.LmSelectItem( psi->iAuth, TRUE );
         }
 
@@ -96,26 +96,18 @@ bool getServerInfo( KWindow* pkwndO, PSERVERINFO psi, bool fSet )
         ulReply = kdlg.GetResult();
         if( ulReply == DID_OK )
         {
-            int len;
+            kcbAddr.QueryWindowText( psi->strAddress );
+            kefUserName.QueryWindowText( psi->strUserName );
+            kefPassword.QueryWindowText( psi->strPassword );
+            kefDir.QueryWindowText( psi->strDir );
 
-            kcbAddr.QueryWindowText( sizeof( psi->szAddress ),
-                                     psi->szAddress );
-
-            kefUserName.QueryWindowText( sizeof( psi->szUserName ),
-                                          psi->szUserName );
-
-            kefPassword.QueryWindowText( sizeof( psi->szPassword ),
-                                          psi->szPassword );
-
-            kefDir.QueryWindowText( sizeof( psi->szDir ), psi->szDir );
-
-            len = strlen( psi->szDir );
-            if( !len || psi->szDir[ len - 1 ] != '/')
-                strcat( psi->szDir, "/");
+            if( psi->strDir.empty() ||
+                psi->strDir[ psi->strDir.length() - 1 ] != '/')
+                psi->strDir.append("/");
 
             psi->iAuth = kcbAuth.LmQuerySelection( LIT_FIRST );
 
-            if( !psi->szAddress[ 0 ])
+            if( !psi->strAddress[ 0 ])
                 ulReply = DID_CANCEL;
         }
 
