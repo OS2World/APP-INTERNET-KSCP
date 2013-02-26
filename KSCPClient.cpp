@@ -990,6 +990,7 @@ int KSCPClient::KSCPDownload()
     _fCanceled = false;
 
     _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
+    _kdlg.Centering();
 
     RemoteParam rpParam = { this, &KSCPClient::Download };
     KRemoteWorkThread thread;
@@ -1208,6 +1209,7 @@ int KSCPClient::KSCPUpload()
     _fCanceled = false;
 
     _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
+    _kdlg.Centering();
 
     _kdlg.SetWindowText("Upload");
 
@@ -1281,6 +1283,7 @@ int KSCPClient::KSCPDelete()
     _fCanceled = false;
 
     _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
+    _kdlg.Centering();
 
     _kdlg.SetWindowText("Delete");
     _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, "");
