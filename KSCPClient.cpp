@@ -52,7 +52,7 @@ void KSCPClient::QuerySSHHome( string& strHome )
     }
 }
 
-bool KSCPClient::CheckHostkey( PSERVERINFO psi )
+bool KSCPClient::CheckHostkey()
 {
     string              strKnownHostFile;
     LIBSSH2_KNOWNHOSTS* nh;
@@ -74,7 +74,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
 
         sstMsg << "Failed to query a hostkey :" << endl
                << errmsg;
-        MessageBox( sstMsg.str(), psi->strAddress, MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -86,7 +86,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
 
         sstMsg << "Failed to initialize a known host :" << endl
                << errmsg;
-        MessageBox( sstMsg.str(), psi->strAddress, MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -97,7 +97,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
     hostcount = libssh2_knownhost_readfile( nh, strKnownHostFile.c_str(),
                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH );
 
-    check = libssh2_knownhost_check( nh, psi->strAddress.c_str(),
+    check = libssh2_knownhost_check( nh, _strAddress.c_str(),
                                      hostkey, hostkeylen,
                                      LIBSSH2_KNOWNHOST_TYPE_PLAIN |
                                      LIBSSH2_KNOWNHOST_KEYENC_RAW, &host );
@@ -147,7 +147,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
     }
 
     if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH )
-        rc = MessageBox( sstMsg.str(), psi->strAddress,
+        rc = MessageBox( sstMsg.str(), _strAddress,
                          check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
                             ( MB_YESNO | MB_QUERY ) :
                             ( MB_OK | MB_WARNING )) == MBID_YES;
@@ -167,7 +167,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
                 break;
         }
 
-        if( libssh2_knownhost_addc( nh, psi->strAddress.c_str(), NULL,
+        if( libssh2_knownhost_addc( nh, _strAddress.c_str(), NULL,
                                     hostkey, hostkeylen, NULL, 0,
                                     LIBSSH2_KNOWNHOST_TYPE_PLAIN |
                                     LIBSSH2_KNOWNHOST_KEYENC_RAW |
@@ -177,7 +177,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
             sstMsg << "Failed to add a hostkey :" << endl
                    << errmsg;
 
-            MessageBox( sstMsg.str(), psi->strAddress, MB_OK | MB_ERROR );
+            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
         }
         else if( libssh2_knownhost_writefile( nh, strKnownHostFile.c_str(),
                                               LIBSSH2_KNOWNHOST_FILE_OPENSSH ))
@@ -187,7 +187,7 @@ bool KSCPClient::CheckHostkey( PSERVERINFO psi )
                    << strKnownHostFile << " :" << endl
                    << errmsg;
 
-            MessageBox( sstMsg.str(), psi->strAddress, MB_OK | MB_ERROR );
+            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
         }
     }
 
@@ -456,10 +456,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
      */
     _sock = socket( AF_INET, SOCK_STREAM, 0 );
 
-    host = gethostbyname( psi->strAddress.c_str());
+    host = gethostbyname( _strAddress.c_str());
     if( !host )
     {
-        sstMsg << "Cannot resolve host " << psi->strAddress << " :" << endl
+        sstMsg << "Cannot resolve host " << _strAddress << " :" << endl
                << strerror( sock_errno());
 
         MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
@@ -471,7 +471,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
                   MAX_WAIT_TIME );
     if( rc != 0 )
     {
-        sstMsg << "Failed to connect to " << psi->strAddress << " :" << endl
+        sstMsg << "Failed to connect to " << _strAddress << " :" << endl
                << ( rc > 0 ? strerror( rc ) : "Canceled");
 
         MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
@@ -504,7 +504,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
      * may have it hard coded, may go to a file, may present it to the
      * user, that's your call
      */
-    if( !CheckHostkey( psi ))
+    if( !CheckHostkey())
         goto exit_session_disconnect;
 
     if( psi->iAuth == 0 )

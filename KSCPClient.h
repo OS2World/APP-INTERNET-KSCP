@@ -56,7 +56,7 @@ private :
     bool                _fCnrEditing;
 
     void QuerySSHHome( string& strHome );
-    bool CheckHostkey( PSERVERINFO psi );
+    bool CheckHostkey();
     bool ReadDir( const string& strDir );
     void ConnectMain( u_long to_addr, int port, int timeout,
                       HEV hevDone, int* piResult );
