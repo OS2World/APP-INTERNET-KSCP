@@ -36,6 +36,7 @@ protected :
 private :
     friend class KRemoteWorkThread;
     friend class KLocalWorkThread;
+    friend class KConnectThread;
 
     KSCPContainer       _kcnr;
     KMenu               _kmenuPopup;
@@ -57,6 +58,9 @@ private :
     void QuerySSHHome( string& strHome );
     bool CheckHostkey( PSERVERINFO psi );
     bool ReadDir( const string& strDir );
+    void ConnectMain( u_long to_addr, int port, int timeout,
+                      HEV hevDone, int* piResult );
+    int  Connect( u_long to_addr, int port, int timeout );
     bool KSCPConnect( PSERVERINFO psi );
 
     void RemoveRecordAll();

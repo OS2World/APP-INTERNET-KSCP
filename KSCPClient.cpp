@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <fcntl.h>
 
 #include <libssh2.h>
 #include <libssh2_sftp.h>
@@ -21,6 +22,7 @@
 
 #include "KRemoteWorkThread.h"
 #include "KLocalWorkThread.h"
+#include "KConnectThread.h"
 
 #include "KSCPClient.h"
 
@@ -330,9 +332,107 @@ bool KSCPClient::ReadDir( const string& strDir )
     return true;
 }
 
+void KSCPClient::ConnectMain( u_long to_addr, int port, int timeout,
+                              HEV hevDone, int* piResult )
+{
+    int    flags;
+    struct sockaddr_in sin;
+    fd_set rset, wset;
+    struct timeval tv;
+    int    rc;
+
+    flags = fcntl( _sock, F_GETFL );
+    fcntl( _sock, F_SETFL, flags | O_NONBLOCK );
+
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons( port );
+    sin.sin_addr.s_addr = to_addr;
+    if( connect( _sock, reinterpret_cast< struct sockaddr* >( &sin ),
+                 sizeof( struct sockaddr_in )) != 0 )
+    {
+        if( sock_errno() != EINPROGRESS )
+        {
+            rc = sock_errno();
+            goto exit_set_fl;
+        }
+    }
+    else
+    {
+        rc = 0;
+        goto exit_set_fl;
+    }
+
+    /* Support positive timeout only */
+    for(; !_fCanceled && timeout > 0 ; timeout -= 100 )
+    {
+        FD_ZERO( &rset );
+        FD_SET( _sock, &rset );
+        wset = rset;
+
+        tv.tv_sec  = 0;
+        tv.tv_usec = 100 * 1000;
+
+        rc = select( _sock + 1, &rset, &wset, NULL, &tv );
+        if( rc != 0 )
+            break;
+    }
+
+    if( rc == 0 )
+        rc = ETIMEDOUT;
+    else if( rc < 0 )
+        rc = sock_errno();
+    else
+        rc = 0;
+
+exit_set_fl :
+    fcntl( _sock, F_SETFL, flags );
+
+    *piResult = _fCanceled ? -1 : rc;
+
+    _kdlg.DismissDlg( _fCanceled ? DID_CANCEL : DID_OK );
+
+    DosPostEventSem( hevDone );
+}
+
+int KSCPClient::Connect( u_long to_addr, int port, int timeout )
+{
+    HEV hevDone;
+    int iResult;
+
+    _fCanceled = false;
+
+    DosCreateEventSem( NULL, &hevDone, 0, FALSE );
+
+    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
+    _kdlg.Centering();
+    _kdlg.SetWindowText( _strAddress );
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, "");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, "");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, "Connecting, please wait...");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, "");
+
+    void* apArg[] = { this, &to_addr, &port, &timeout, &hevDone, &iResult };
+
+    KConnectThread thread;
+    thread.BeginThread( apArg );
+
+    _kdlg.ProcessDlg();
+    if( _kdlg.GetResult() == DID_CANCEL )
+        _fCanceled = true;
+
+    _kdlg.DestroyWindow();
+
+    WinWaitEventSem( hevDone, SEM_INDEFINITE_WAIT );
+    DosCloseEventSem( hevDone );
+
+    return iResult;
+}
+
+#define SSH_PORT        22
+#define MAX_WAIT_TIME   ( 10 * 1000 )
+
 bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 {
-    struct sockaddr_in sin;
     stringstream       sstMsg;
     char*              errmsg;
     struct hostent*    host;
@@ -347,7 +447,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     if( _sock != -1 )
         KSCPDisconnect();
 
-    _strCurDir = psi->strDir;
+    _strAddress = psi->strAddress;
+    _strCurDir  = psi->strDir;
 
     /*
      * The application code is responsible for creating the socket
@@ -366,14 +467,12 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         goto exit_close_socket;
     }
 
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons( 22 );
-    sin.sin_addr.s_addr = *reinterpret_cast< u_long* >( host->h_addr );
-    if( connect( _sock, reinterpret_cast< struct sockaddr* >( &sin ),
-                 sizeof( struct sockaddr_in )) != 0 )
+    rc = Connect( *reinterpret_cast< u_long* >( host->h_addr ), SSH_PORT,
+                  MAX_WAIT_TIME );
+    if( rc != 0 )
     {
         sstMsg << "Failed to connect to " << psi->strAddress << " :" << endl
-               << strerror( sock_errno());
+               << ( rc > 0 ? strerror( rc ) : "Canceled");
 
         MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
 
@@ -469,8 +568,6 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
 
     /* Since we have not set non-blocking, tell libssh2 we are blocking */
     libssh2_session_set_blocking( _session, 1 );
-
-    _strAddress = psi->strAddress;
 
     _kcnr.CreateWindow( this, "",
                        CCS_AUTOPOSITION | CCS_EXTENDSEL | CCS_MINIICONS,
