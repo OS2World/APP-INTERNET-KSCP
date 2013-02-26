@@ -431,7 +431,7 @@ int KSCPClient::Connect( u_long to_addr, int port, int timeout )
 #define SSH_PORT        22
 #define MAX_WAIT_TIME   ( 10 * 1000 )
 
-bool KSCPClient::KSCPConnect( PSERVERINFO psi )
+bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
 {
     stringstream       sstMsg;
     char*              errmsg;
@@ -445,7 +445,19 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
     KWindow kwnd;
 
     if( _sock != -1 )
+    {
+        if( fQuery )
+        {
+            if( MessageBox("You have a connection.\n"\
+                           "Are you sure to connect to a new host "\
+                           "after disconnecting this session ?",
+                            _strAddress, MB_YESNO | MB_QUERY ) !=
+                MBID_YES )
+                return false;
+        }
+
         KSCPDisconnect();
+    }
 
     _strAddress = psi->strAddress;
     _strCurDir  = psi->strDir;

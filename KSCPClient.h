@@ -61,7 +61,7 @@ private :
     void ConnectMain( u_long to_addr, int port, int timeout,
                       HEV hevDone, int* piResult );
     int  Connect( u_long to_addr, int port, int timeout );
-    bool KSCPConnect( PSERVERINFO psi );
+    bool KSCPConnect( PSERVERINFO psi, bool fQuery = true );
 
     void RemoveRecordAll();
     void KSCPDisconnect( bool fQuery = false );
