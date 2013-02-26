@@ -217,7 +217,7 @@ bool KSCPClient::ReadDir( const string& strDir )
         sstMsg << "Unable to open dir with SFTP :" << endl
                << errmsg;
 
-        MessageBox( sstMsg.str(), "OpenDir",  MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress,  MB_OK | MB_ERROR );
 
         return false;
     }
@@ -462,7 +462,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         sstMsg << "Cannot resolve host " << _strAddress << " :" << endl
                << strerror( sock_errno());
 
-        MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -474,7 +474,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         sstMsg << "Failed to connect to " << _strAddress << " :" << endl
                << ( rc > 0 ? strerror( rc ) : "Canceled");
 
-        MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -494,7 +494,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         sstMsg << "Failed to establish SSH session :" << endl
                << errmsg;
-        MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_free;
     }
@@ -516,7 +516,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             sstMsg << "Authentication by password failed :" << endl
                    << errmsg;
-            MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -547,7 +547,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             sstMsg << "Authentication by public key failed :" << endl
                    << errmsg;
-            MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -561,7 +561,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi )
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         sstMsg << "Unable to init SFTP session :" << endl
                << errmsg;
-        MessageBox( sstMsg.str(), "Connect", MB_OK | MB_ERROR );
+        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
