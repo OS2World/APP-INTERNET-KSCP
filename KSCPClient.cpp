@@ -591,7 +591,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     pfi->flData     = CFA_BITMAPORICON | CFA_HORZSEPARATOR | CFA_CENTER |
                       CFA_SEPARATOR;
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
-    pfi->pTitleData = const_cast< char* >("Icon");
+    pfi->pTitleData = CSTR2PSZ("Icon");
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, mrc.hptrIcon );
     pfi             = pfi->pNextFieldInfo;
 
@@ -599,7 +599,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
                       CFA_SEPARATOR;
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
-    pfi->pTitleData = const_cast< char* >("Name");
+    pfi->pTitleData = CSTR2PSZ("Name");
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszName);
     pfi             = pfi->pNextFieldInfo;
 
@@ -607,7 +607,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_RIGHT |
                       CFA_SEPARATOR | CFA_FIREADONLY;
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
-    pfi->pTitleData = const_cast< char* >("Size");
+    pfi->pTitleData = CSTR2PSZ("Size");
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszSize);
     pfi             = pfi->pNextFieldInfo;
 
@@ -615,7 +615,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     pfi->flData     = CFA_STRING | CFA_HORZSEPARATOR | CFA_CENTER |
                       CFA_SEPARATOR | CFA_FIREADONLY;
     pfi->flTitle    = CFA_CENTER | CFA_FITITLEREADONLY;
-    pfi->pTitleData = const_cast< char* >("Date");
+    pfi->pTitleData = CSTR2PSZ("Date");
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszDate);
 
     fii.cb                   = sizeof( FIELDINFOINSERT );
