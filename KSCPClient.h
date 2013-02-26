@@ -38,6 +38,7 @@ private :
     friend class KLocalWorkThread;
     friend class KConnectThread;
 
+    KFrameWindow        _kframe;
     KSCPContainer       _kcnr;
     KMenu               _kmenuPopup;
     int                 _sock;

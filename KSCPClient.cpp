@@ -643,6 +643,8 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
                        SWP_MOVE | SWP_SIZE | SWP_ZORDER | SWP_SHOW );
     _kcnr.SetFocus();
 
+    _kframe.SetWindowText( string( KSCP_TITLE ) + " - " + _strAddress );
+
     return true;
 
 exit_destroy_window :
@@ -720,6 +722,8 @@ void KSCPClient::KSCPDisconnect( bool fQuery )
 
     _strCurDir.clear();
     _strAddress.clear();
+
+    _kframe.SetWindowText( KSCP_TITLE );
 }
 
 bool KSCPClient::FileOpen()
@@ -1537,6 +1541,8 @@ MRESULT KSCPClient::OnCreate( PVOID pCtrlData, PCREATESTRUCT pcs )
                            "", szStr, sizeof( szStr ));
 
     _strDlDir = szStr;
+
+    QueryWindow( QW_PARENT, _kframe );
 
     return 0;
 }
