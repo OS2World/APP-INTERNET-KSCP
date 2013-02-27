@@ -24,7 +24,7 @@ void ServerInfoVector::Load()
     PCH          pchBuffer, pch;
     ULONG        ulBufMax;
     LONG         lCount = 0;
-    stringstream sstKey;
+    stringstream ssKey;
     int          i;
 
     ulBufMax = sizeof( lCount );
@@ -33,8 +33,8 @@ void ServerInfoVector::Load()
 
     for( i = 0; i < lCount; i++ )
     {
-        sstKey.str("");
-        sstKey << KSCP_PRF_KEY_SERVER_BASE << i;
+        ssKey.str("");
+        ssKey << KSCP_PRF_KEY_SERVER_BASE << i;
 
         ulBufMax = MAX_ADDRESS_LEN  + MAX_USERNAME_LEN +
                    MAX_PASSWORD_LEN + MAX_DIR_LEN +
@@ -43,7 +43,7 @@ void ServerInfoVector::Load()
         pchBuffer = new CHAR[ ulBufMax ];
 
         PrfQueryProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
-                             sstKey.str().c_str(), pchBuffer, &ulBufMax );
+                             ssKey.str().c_str(), pchBuffer, &ulBufMax );
 
         psi = new SERVERINFO;
 
@@ -71,7 +71,7 @@ void ServerInfoVector::Load()
 void ServerInfoVector::Save()
 {
     LONG         lCount = _vtServerInfo.size();
-    stringstream sstKey;
+    stringstream ssKey;
     PCH          pchData, pch;
     LONG         lDataSize;
 
@@ -104,11 +104,11 @@ void ServerInfoVector::Save()
         pch += MAX_DIR_LEN;
         memcpy( pch, &psi->iAuth, sizeof( int ));
 
-        sstKey.str("");
-        sstKey << KSCP_PRF_KEY_SERVER_BASE << i;
+        ssKey.str("");
+        ssKey << KSCP_PRF_KEY_SERVER_BASE << i;
 
         PrfWriteProfileData( HINI_USERPROFILE, KSCP_PRF_APP,
-                             sstKey.str().c_str(), pchData, lDataSize );
+                             ssKey.str().c_str(), pchData, lDataSize );
 
         delete[] pchData;
     }

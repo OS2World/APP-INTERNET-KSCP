@@ -64,7 +64,7 @@ bool KSCPClient::CheckHostkey()
     int                 type;
     int                 check;
     char*               errmsg;
-    stringstream        sstMsg;
+    stringstream        ssMsg;
     bool                rc = false;
 
     hostkey = libssh2_session_hostkey( _session, &hostkeylen, &type );
@@ -72,9 +72,9 @@ bool KSCPClient::CheckHostkey()
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
 
-        sstMsg << "Failed to query a hostkey :" << endl
-               << errmsg;
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        ssMsg << "Failed to query a hostkey :" << endl
+              << errmsg;
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -84,9 +84,9 @@ bool KSCPClient::CheckHostkey()
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
 
-        sstMsg << "Failed to initialize a known host :" << endl
-               << errmsg;
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        ssMsg << "Failed to initialize a known host :" << endl
+              << errmsg;
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -107,29 +107,29 @@ bool KSCPClient::CheckHostkey()
     {
         for( int i = 0; i < 16; i++ )   // MD5 hash size is 16 bytes
         {
-            sstMsg.width( 2 );
-            sstMsg.fill('0');
-            sstMsg << hex << uppercase
-                   << static_cast< unsigned >
-                        ( static_cast< unsigned char > ( fingerprint[ i ]));
+            ssMsg.width( 2 );
+            ssMsg.fill('0');
+            ssMsg << hex << uppercase
+                  << static_cast< unsigned >
+                         ( static_cast< unsigned char > ( fingerprint[ i ]));
 
-            sstMsg.width();
-            sstMsg << ":";
+            ssMsg.width();
+            ssMsg << ":";
         }
-        sstMsg << endl;
+        ssMsg << endl;
     }
 
     switch( check )
     {
         case LIBSSH2_KNOWNHOST_CHECK_FAILURE :
-            sstMsg << "Hostkey check failed." << endl
-                   << "Are you sure to continue connecting ?";
+            ssMsg << "Hostkey check failed." << endl
+                  << "Are you sure to continue connecting ?";
             break;
 
         case LIBSSH2_KNOWNHOST_CHECK_NOTFOUND :
-            sstMsg << "Hostkey not found." << endl
-                   << "Are you sure to accept this key "
-                   << "and to continue connecting ?";
+            ssMsg << "Hostkey not found." << endl
+                  << "Are you sure to accept this key "
+                  << "and to continue connecting ?";
             break;
 
         case LIBSSH2_KNOWNHOST_CHECK_MATCH :
@@ -137,24 +137,24 @@ bool KSCPClient::CheckHostkey()
             break;
 
         case LIBSSH2_KNOWNHOST_CHECK_MISMATCH :
-            sstMsg << "Hostkey mismatched." << endl
-                   << "This MAY be a HACKING." << endl
-                   << "If you want to continue to connecting, "
-                   << "remove a line for this host in your known host file, "
-                   << strKnownHostFile;
+            ssMsg << "Hostkey mismatched." << endl
+                  << "This MAY be a HACKING." << endl
+                  << "If you want to continue to connecting, "
+                  << "remove a line for this host in your known host file, "
+                  << strKnownHostFile;
 
             break;
     }
 
     if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH )
-        rc = MessageBox( sstMsg.str(), _strAddress,
+        rc = MessageBox( ssMsg.str(), _strAddress,
                          check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
                             ( MB_YESNO | MB_QUERY ) :
                             ( MB_OK | MB_WARNING )) == MBID_YES;
 
     if( rc && check == LIBSSH2_KNOWNHOST_CHECK_NOTFOUND )
     {
-        sstMsg.str("");
+        ssMsg.str("");
 
         switch( type )
         {
@@ -174,20 +174,20 @@ bool KSCPClient::CheckHostkey()
                                     type, NULL ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            sstMsg << "Failed to add a hostkey :" << endl
-                   << errmsg;
+            ssMsg << "Failed to add a hostkey :" << endl
+                  << errmsg;
 
-            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
         }
         else if( libssh2_knownhost_writefile( nh, strKnownHostFile.c_str(),
                                               LIBSSH2_KNOWNHOST_FILE_OPENSSH ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            sstMsg << "Failed to write to "
-                   << strKnownHostFile << " :" << endl
-                   << errmsg;
+            ssMsg << "Failed to write to "
+                  << strKnownHostFile << " :" << endl
+                  << errmsg;
 
-            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
         }
     }
 
@@ -210,14 +210,14 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
 
     if (!sftp_handle)
     {
-        stringstream sstMsg;
+        stringstream ssMsg;
         char *errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Unable to open dir with SFTP :" << endl
-               << errmsg;
+        ssMsg << "Unable to open dir with SFTP :" << endl
+              << errmsg;
 
-        MessageBox( sstMsg.str(), _strAddress,  MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), _strAddress,  MB_OK | MB_ERROR );
 
         return false;
     }
@@ -271,11 +271,11 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
                         break;
                 }
 
-                stringstream sst;
+                stringstream ss;
 
-                sst.precision( usUnit == 0 ? 0 : 2 );
-                sst << fixed << dSize << " " << pszUnit [ usUnit ];
-                _strkrSize = sst.str();
+                ss.precision( usUnit == 0 ? 0 : 2 );
+                ss << fixed << dSize << " " << pszUnit [ usUnit ];
+                _strkrSize = ss.str();
 
                 pkr->pszSize = CSTR2PSZ( _strkrSize.c_str());
             }
@@ -288,17 +288,17 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
             {
                 struct tm tm = *localtime( reinterpret_cast< time_t* >
                                                ( &attrs.mtime ));
-                stringstream sst;
+                stringstream ss;
 
-                sst.fill('0');
-                sst.width( 4 );
-                sst << tm.tm_year + 1900 << "-";
-                sst.width( 2 );
-                sst << tm.tm_mon + 1 << "-"
-                    << tm.tm_mday << ", "
-                    << tm.tm_hour << ":"
-                    << tm.tm_min;
-                _strkrDate = sst.str();
+                ss.fill('0');
+                ss.width( 4 );
+                ss << tm.tm_year + 1900 << "-";
+                ss.width( 2 );
+                ss << tm.tm_mon + 1 << "-"
+                   << tm.tm_mday << ", "
+                   << tm.tm_hour << ":"
+                   << tm.tm_min;
+                _strkrDate = ss.str();
 
                 pkr->pszDate = CSTR2PSZ( _strkrDate.c_str());
             }
@@ -476,7 +476,7 @@ int KSCPClient::Connect( u_long to_addr, int port, int timeout )
 
 bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
 {
-    stringstream       sstMsg;
+    stringstream       ssMsg;
     char*              errmsg;
     struct hostent*    host;
     PFIELDINFO         pfi, pfiStart;
@@ -514,10 +514,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     host = gethostbyname( _strAddress.c_str());
     if( !host )
     {
-        sstMsg << "Cannot resolve host " << _strAddress << " :" << endl
-               << strerror( sock_errno());
+        ssMsg << "Cannot resolve host " << _strAddress << " :" << endl
+              << strerror( sock_errno());
 
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -526,10 +526,10 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
                   MAX_WAIT_TIME );
     if( rc != 0 )
     {
-        sstMsg << "Failed to connect to " << _strAddress << " :" << endl
-               << ( rc > 0 ? strerror( rc ) : "Canceled");
+        ssMsg << "Failed to connect to " << _strAddress << " :" << endl
+              << ( rc > 0 ? strerror( rc ) : "Canceled");
 
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -547,9 +547,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     if(rc)
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Failed to establish SSH session :" << endl
-               << errmsg;
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        ssMsg << "Failed to establish SSH session :" << endl
+              << errmsg;
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_free;
     }
@@ -569,9 +569,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
                                        psi->strPassword.c_str()))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            sstMsg << "Authentication by password failed :" << endl
-                   << errmsg;
-            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            ssMsg << "Authentication by password failed :" << endl
+                  << errmsg;
+            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -582,27 +582,27 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
 
         QuerySSHHome( strHome );
 
-        stringstream sstPublicKey;
-        stringstream sstPrivateKey;
+        stringstream ssPublicKey;
+        stringstream ssPrivateKey;
 
-        sstPublicKey << strHome << "/id_"
-                     << ( psi->iAuth == 1 ? "rsa" : "dsa")
-                     << ".pub";
+        ssPublicKey << strHome << "/id_"
+                    << ( psi->iAuth == 1 ? "rsa" : "dsa")
+                    << ".pub";
 
-        sstPrivateKey << strHome << "/id_"
-                      << ( psi->iAuth == 1 ? "rsa" : "dsa" );
+        ssPrivateKey << strHome << "/id_"
+                     << ( psi->iAuth == 1 ? "rsa" : "dsa" );
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,
                             psi->strUserName.c_str(),
-                            sstPublicKey.str().c_str(),
-                            sstPrivateKey.str().c_str(),
+                            ssPublicKey.str().c_str(),
+                            ssPrivateKey.str().c_str(),
                             psi->strPassword.c_str() ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            sstMsg << "Authentication by public key failed :" << endl
-                   << errmsg;
-            MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            ssMsg << "Authentication by public key failed :" << endl
+                  << errmsg;
+            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -614,9 +614,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     if( !_sftp_session )
     {
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Unable to init SFTP session :" << endl
-               << errmsg;
-        MessageBox( sstMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        ssMsg << "Unable to init SFTP session :" << endl
+              << errmsg;
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
@@ -885,7 +885,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     FILE*             fp;
     char*             buf;
     libssh2_uint64_t  size;
-    stringstream      sstMsg;
+    stringstream      ssMsg;
 
     struct timeval tv1, tv2;
     long long      diffTime;
@@ -900,10 +900,10 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Cannot open " << strSFTPPath << " :" << endl
-               << errmsg;
+        ssMsg << "Cannot open " << strSFTPPath << " :" << endl
+              << errmsg;
 
-        MessageBox( sstMsg.str(), "Download", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -917,10 +917,10 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     {
         ULONG ulReply;
 
-        sstMsg << buf << endl
-               << "already exists. Overwrite ?";
+        ssMsg << buf << endl
+              << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( sstMsg.str(), "Download",
+        ulReply = MessageBox( ssMsg.str(), "Download",
                               MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
@@ -930,11 +930,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     fp = fopen( buf, "wb");
     if( !fp )
     {
-        sstMsg.str("");
-        sstMsg << "Cannot create " << buf << " :" << endl
-               << strerror( errno );
+        ssMsg.str("");
+        ssMsg << "Cannot create " << buf << " :" << endl
+              << strerror( errno );
 
-        MessageBox( sstMsg.str(), "Download", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
         goto exit_free;
     }
@@ -945,12 +945,12 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
         for( size = diffTime = 0; !_fCanceled; )
         {
-            sstMsg.str("");
-            sstMsg << size / 1024 << " KB of "
-                   << pattr->filesize / 1024 << " KB ("
-                   << size * 100 / pattr->filesize << "%)";
+            ssMsg.str("");
+            ssMsg << size / 1024 << " KB of "
+                  << pattr->filesize / 1024 << " KB ("
+                  << size * 100 / pattr->filesize << "%)";
 
-            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, sstMsg.str());
+            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
             gettimeofday( &tv1, NULL );
             /* read in a loop until we block */
@@ -969,11 +969,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
             if( diffTime )
             {
-                sstMsg.str("");
-                sstMsg << ( size * 1000000LL / 1024 ) / diffTime
-                       << " KB/s";
+                ssMsg.str("");
+                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
+                      << " KB/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
-                                      sstMsg.str());
+                                      ssMsg.str());
             }
         }
     }
@@ -994,7 +994,7 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
 {
     PKSCPRECORD pkr;
 
-    stringstream sstMsg;
+    stringstream ssMsg;
 
     int  count;
     int  i;
@@ -1009,9 +1009,9 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
         if( !pkr )
             break;
 
-        sstMsg.str("");
-        sstMsg << i << " of " << count;
-        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, sstMsg.str());
+        ssMsg.str("");
+        ssMsg << i << " of " << count;
+        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, ssMsg.str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, pkr->pszName );
 
         ( this->*pCallback )( pkr );
@@ -1024,7 +1024,7 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
 
 int KSCPClient::KSCPDownload()
 {
-    stringstream sstMsg;
+    stringstream ssMsg;
 
     ULONG ulReply;
 
@@ -1059,10 +1059,10 @@ int KSCPClient::KSCPDownload()
 
     _kdlg.DestroyWindow();
 
-    sstMsg << "Download "
-           << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    ssMsg << "Download "
+          << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( sstMsg.str(), "Download", MB_OK | MB_INFORMATION );
+    MessageBox( ssMsg.str(), "Download", MB_OK | MB_INFORMATION );
 
     return 0;
 }
@@ -1076,7 +1076,7 @@ int KSCPClient::Upload( const string& strName )
     FILE*        fp;
     off_t        size, fileSize;
     char*        buf;
-    stringstream sstMsg;
+    stringstream ssMsg;
 
     struct stat statbuf;
 
@@ -1087,10 +1087,10 @@ int KSCPClient::Upload( const string& strName )
 
     if( stat( strName.c_str(), &statbuf ) < 0 || !S_ISREG( statbuf.st_mode ))
     {
-        sstMsg << "Ooops... This is not a file. Ignored." << endl
-               << strName;
+        ssMsg << "Ooops... This is not a file. Ignored." << endl
+              << strName;
 
-        MessageBox( sstMsg.str(), "Upload", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -1098,10 +1098,10 @@ int KSCPClient::Upload( const string& strName )
     fp = fopen( strName.c_str(), "rb");
     if( !fp )
     {
-        sstMsg << "Cannot open " << strName << " :" << endl
-               << strerror( errno );
+        ssMsg << "Cannot open " << strName << " :" << endl
+              << strerror( errno );
 
-        MessageBox( sstMsg.str(), "Upload", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -1116,10 +1116,10 @@ int KSCPClient::Upload( const string& strName )
     {
         ULONG ulReply;
 
-        sstMsg << strSFTPPath << endl
-               << "already exists. Overwrite ?";
+        ssMsg << strSFTPPath << endl
+              << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( sstMsg.str() , "Upload",
+        ulReply = MessageBox( ssMsg.str() , "Upload",
                               MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
@@ -1138,11 +1138,11 @@ int KSCPClient::Upload( const string& strName )
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg.str("");
-        sstMsg << "Cannot create " << strSFTPPath << " :" << endl
-               << errmsg;
+        ssMsg.str("");
+        ssMsg << "Cannot create " << strSFTPPath << " :" << endl
+              << errmsg;
 
-        MessageBox( sstMsg.str(), "Upload", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         goto exit_fclose;
     }
@@ -1156,12 +1156,12 @@ int KSCPClient::Upload( const string& strName )
 
         for( size = diffTime = 0; !_fCanceled; )
         {
-            sstMsg.str("");
-            sstMsg << size / 1024 << " KB of "
-                   << fileSize / 1024 << " KB ("
-                   << size * 100 / fileSize << "%)";
+            ssMsg.str("");
+            ssMsg << size / 1024 << " KB of "
+                  << fileSize / 1024 << " KB ("
+                  << size * 100 / fileSize << "%)";
 
-            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, sstMsg.str());
+            _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
             nRead = fread( buf, 1, BUF_SIZE, fp );
             if( nRead <= 0 )
@@ -1188,20 +1188,20 @@ int KSCPClient::Upload( const string& strName )
 
             if( nRead )
             {
-                sstMsg.str("");
-                sstMsg << "Ooops... Error occurs while uploading" << endl
-                       << strName;
-                MessageBox( sstMsg.str(), "Upload",
+                ssMsg.str("");
+                ssMsg << "Ooops... Error occurs while uploading" << endl
+                      << strName;
+                MessageBox( ssMsg.str(), "Upload",
                             MB_OK | MB_ERROR );
                 goto exit_free;
             }
 
             if( diffTime )
             {
-                sstMsg.str("");
-                sstMsg << ( size * 1000000LL / 1024 ) / diffTime
-                       << " KB/s";
-                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, sstMsg.str());
+                ssMsg.str("");
+                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
+                      << " KB/s";
+                _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, ssMsg.str());
             }
         }
     }
@@ -1224,16 +1224,16 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
     KFDVECSTR vsList = _kfd.GetFQFilename();
     ULONG ulCount    = _kfd.GetFQFCount();
 
-    stringstream sstMsg;
+    stringstream ssMsg;
     unsigned     i;
 
     _fBusy = true;
 
     for( i = 0; i < ulCount && !_fCanceled; i++ )
     {
-        sstMsg.str("");
-        sstMsg << i + 1 << " of " << ulCount;
-        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  sstMsg.str());
+        ssMsg.str("");
+        ssMsg << i + 1 << " of " << ulCount;
+        _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  ssMsg.str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, vsList[ i ]);
         (this->*pCallback)( vsList[ i ]);
     }
@@ -1245,7 +1245,7 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
 
 int KSCPClient::KSCPUpload()
 {
-    stringstream sstMsg;
+    stringstream ssMsg;
     ULONG        ulReply;
 
     if( _fBusy )
@@ -1280,10 +1280,10 @@ int KSCPClient::KSCPUpload()
 
     _kdlg.DestroyWindow();
 
-    sstMsg << "Upload "
-           << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    ssMsg << "Upload "
+          << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( sstMsg.str(), "Upload", MB_OK | MB_INFORMATION );
+    MessageBox( ssMsg.str(), "Upload", MB_OK | MB_INFORMATION );
 
     Refresh();
 
@@ -1293,7 +1293,7 @@ int KSCPClient::KSCPUpload()
 int KSCPClient::Delete( PKSCPRECORD pkr )
 {
     string       strSFTPPath;
-    stringstream sstMsg;
+    stringstream ssMsg;
 
     strSFTPPath = _strCurDir + pkr->pszName;
     if( libssh2_sftp_unlink( _sftp_session, strSFTPPath.c_str()))
@@ -1301,10 +1301,10 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Cannot delete " << strSFTPPath << " :" << endl
-               << errmsg;
+        ssMsg << "Cannot delete " << strSFTPPath << " :" << endl
+              << errmsg;
 
-        MessageBox( sstMsg.str(), "Delete", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str(), "Delete", MB_OK | MB_ERROR );
 
         return 1;
     }
@@ -1314,7 +1314,7 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
 
 int KSCPClient::KSCPDelete()
 {
-    stringstream sstMsg;
+    stringstream ssMsg;
     ULONG        ulReply;
 
     if( _fBusy )
@@ -1356,10 +1356,10 @@ int KSCPClient::KSCPDelete()
 
     _kdlg.DestroyWindow();
 
-    sstMsg << "Delete "
-           << (ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+    ssMsg << "Delete "
+          << (ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
 
-    MessageBox( sstMsg.str(), "Delete", MB_OK | MB_INFORMATION );
+    MessageBox( ssMsg.str(), "Delete", MB_OK | MB_INFORMATION );
 
     Refresh();
 
@@ -1369,7 +1369,7 @@ int KSCPClient::KSCPDelete()
 void KSCPClient::Rename( PKSCPRECORD pkr )
 {
     string       strOldSFTPPath, strNewSFTPPath;
-    stringstream sstMsg;
+    stringstream ssMsg;
 
     strOldSFTPPath = _strCurDir + pkr->mrc.pszIcon;
     strNewSFTPPath = _strCurDir + pkr->pszName;
@@ -1380,11 +1380,11 @@ void KSCPClient::Rename( PKSCPRECORD pkr )
         char* errmsg;
 
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-        sstMsg << "Cannot rename " << pkr->mrc.pszIcon
-               << " to " << pkr->pszName << " :" << endl
-               << errmsg;
+        ssMsg << "Cannot rename " << pkr->mrc.pszIcon
+              << " to " << pkr->pszName << " :" << endl
+              << errmsg;
 
-        MessageBox( sstMsg.str() , "Rename", MB_OK | MB_ERROR );
+        MessageBox( ssMsg.str() , "Rename", MB_OK | MB_ERROR );
 
         delete[] pkr->pszName;
         pkr->pszName = pkr->mrc.pszIcon;

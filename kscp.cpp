@@ -56,12 +56,12 @@ int KSCP::Run()
     rc = libssh2_init( 0 );
     if( rc != 0 )
     {
-        stringstream sstMsg;
+        stringstream ssMsg;
 
-        sstMsg << "libssh2 initialization failed : rc = " << rc;
+        ssMsg << "libssh2 initialization failed : rc = " << rc;
 
         WinMessageBox( HWND_DESKTOP, HWND_DESKTOP,
-                       sstMsg.str().c_str(), "KSCP", 0xFFFF,
+                       ssMsg.str().c_str(), "KSCP", 0xFFFF,
                        MB_OK | MB_ERROR );
 
         return 1;
