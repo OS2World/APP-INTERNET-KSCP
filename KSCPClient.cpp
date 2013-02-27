@@ -329,10 +329,14 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
                 ss.width( 4 );
                 ss << tm.tm_year + 1900 << "-";
                 ss.width( 2 );
-                ss << tm.tm_mon + 1 << "-"
-                   << tm.tm_mday << ", "
-                   << tm.tm_hour << ":"
-                   << tm.tm_min;
+                ss << tm.tm_mon + 1 << "-";
+                ss.width( 2 );
+                ss << tm.tm_mday << ", ";
+                ss.width( 2 );
+                ss << tm.tm_hour << ":";
+                ss.width( 2 );
+                ss << tm.tm_min;
+
                 pkr->pszDate = strdup( ss.str().c_str());
             }
 
