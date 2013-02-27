@@ -278,7 +278,6 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
                 pkr->pszSize = strdup( ss.str().c_str());
             }
 
-
             pkr->pszDate = 0;
 
             if( strcmp( pkr->pszName, "..") &&
