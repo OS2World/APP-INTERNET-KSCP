@@ -275,9 +275,7 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
 
                 ss.precision( usUnit == 0 ? 0 : 2 );
                 ss << fixed << dSize << " " << pszUnit [ usUnit ];
-                _strkrSize = ss.str();
-
-                pkr->pszSize = CSTR2PSZ( _strkrSize.c_str());
+                pkr->pszSize = strdup( ss.str().c_str());
             }
 
 
@@ -298,9 +296,7 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
                    << tm.tm_mday << ", "
                    << tm.tm_hour << ":"
                    << tm.tm_min;
-                _strkrDate = ss.str();
-
-                pkr->pszDate = CSTR2PSZ( _strkrDate.c_str());
+                pkr->pszDate = strdup( ss.str().c_str());
             }
 
             //pkr->mrc.cb        = sizeof( KSCPRECORD );
@@ -724,6 +720,8 @@ void KSCPClient::RemoveRecordAll()
 
         delete[] pkr->pszName;
         delete[] pkr->pbAttr;
+        free( pkr->pszSize );
+        free( pkr->pszDate );
 
         _kcnr.RemoveRecord( &pkr, 1, CMA_FREE );
     }

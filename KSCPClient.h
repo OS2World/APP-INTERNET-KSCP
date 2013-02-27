@@ -55,8 +55,6 @@ private :
     bool                _fCanceled;
     string              _strAddress;
     bool                _fCnrEditing;
-    string              _strkrSize;
-    string              _strkrDate;
 
     void QuerySSHHome( string& strHome );
     bool CheckHostkey();
