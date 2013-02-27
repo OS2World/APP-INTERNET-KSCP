@@ -1071,7 +1071,7 @@ int KSCPClient::Upload( const string& strName )
     fseeko( fp, 0, SEEK_SET );
 
     strSFTPPath  = _strCurDir;
-    strSFTPPath += strName.find_last_of('\\') + 1;
+    strSFTPPath += strName.substr( strName.find_last_of('\\') + 1 );
     if( !libssh2_sftp_stat( _sftp_session, strSFTPPath.c_str(), &sftp_attrs ))
     {
         ULONG ulReply;
