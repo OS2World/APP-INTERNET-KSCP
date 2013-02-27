@@ -624,9 +624,13 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     /* Since we have not set non-blocking, tell libssh2 we are blocking */
     libssh2_session_set_blocking( _session, 1 );
 
+    QueryWindowRect( &rcl );
+
     _kcnr.CreateWindow( this, "",
-                       CCS_AUTOPOSITION | CCS_EXTENDSEL | CCS_MINIICONS,
-                       0, 0, 0, 0, this, KWND_TOP, IDC_CONTAINER );
+                        CCS_AUTOPOSITION | CCS_EXTENDSEL | CCS_MINIICONS |
+                        WS_VISIBLE,
+                        0, 0, rcl.xRight - rcl.xLeft, rcl.yTop - rcl.yBottom,
+                        this, KWND_TOP, IDC_CONTAINER );
 
     pfi = pfiStart = _kcnr.AllocDetailFieldInfo( 4 );
 
@@ -680,10 +684,6 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     if( !ReadDir( psi->strDir ))
         goto exit_destroy_window;
 
-    QueryWindowRect( &rcl );
-    _kcnr.SetWindowPos( KWND_TOP, rcl.xLeft, rcl.yBottom,
-                       rcl.xRight - rcl.xLeft, rcl.yTop - rcl.yBottom,
-                       SWP_MOVE | SWP_SIZE | SWP_ZORDER | SWP_SHOW );
     _kcnr.SetFocus();
 
     _kframe.SetWindowText( string( KSCP_TITLE ) + " - " + _strAddress );
