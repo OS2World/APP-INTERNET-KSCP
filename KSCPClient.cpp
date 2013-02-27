@@ -217,15 +217,29 @@ bool KSCPClient::CheckHostkey()
 
             MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
         }
-        else if( libssh2_knownhost_writefile( nh, strKnownHostFile.c_str(),
-                                              LIBSSH2_KNOWNHOST_FILE_OPENSSH ))
+        else
         {
-            libssh2_session_last_error( _session, &errmsg, NULL, 0 );
-            ssMsg << "Failed to write to "
-                  << strKnownHostFile << " :" << endl
-                  << errmsg;
+            string strHome = strKnownHostFile;
 
-            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            // remove '/known_host' part
+            strHome.erase( strHome.find_last_of('/'));
+
+            struct stat statbuf;
+
+            // if not exist, make the dir
+            if( stat( strHome.c_str(), &statbuf ) == -1 && errno == ENOENT )
+                mkdir( strHome.c_str(), 755 );
+
+            if( libssh2_knownhost_writefile( nh, strKnownHostFile.c_str(),
+                                             LIBSSH2_KNOWNHOST_FILE_OPENSSH ))
+            {
+                libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+                ssMsg << "Failed to write to "
+                      << strKnownHostFile << " :" << endl
+                      << errmsg;
+
+                MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            }
         }
     }
 
