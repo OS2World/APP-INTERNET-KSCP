@@ -271,8 +271,13 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
                         break;
                 }
 
-                asprintf( &pkr->pszSize, "%.*f %s",
-                          usUnit == 0 ? 0 : 2, dSize, pszUnit[ usUnit ]);
+                stringstream sst;
+
+                sst.precision( usUnit == 0 ? 0 : 2 );
+                sst << fixed << dSize << " " << pszUnit [ usUnit ];
+                _strkrSize = sst.str();
+
+                pkr->pszSize = CSTR2PSZ( _strkrSize.c_str());
             }
 
 
@@ -281,12 +286,21 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
             if( strcmp( pkr->pszName, "..") &&
                 attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME )
             {
-               struct tm tm = *localtime( reinterpret_cast< time_t* >
-                                            ( &attrs.mtime ));
+                struct tm tm = *localtime( reinterpret_cast< time_t* >
+                                               ( &attrs.mtime ));
+                stringstream sst;
 
-               asprintf( &pkr->pszDate, "%04d-%02d-%02d, %02d:%02d",
-                         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                         tm.tm_hour, tm.tm_min );
+                sst.fill('0');
+                sst.width( 4 );
+                sst << tm.tm_year + 1900 << "-";
+                sst.width( 2 );
+                sst << tm.tm_mon + 1 << "-"
+                    << tm.tm_mday << ", "
+                    << tm.tm_hour << ":"
+                    << tm.tm_min;
+                _strkrDate = sst.str();
+
+                pkr->pszDate = CSTR2PSZ( _strkrDate.c_str());
             }
 
             //pkr->mrc.cb        = sizeof( KSCPRECORD );
@@ -710,8 +724,6 @@ void KSCPClient::RemoveRecordAll()
 
         delete[] pkr->pszName;
         delete[] pkr->pbAttr;
-        free( pkr->pszSize );
-        free( pkr->pszDate );
 
         _kcnr.RemoveRecord( &pkr, 1, CMA_FREE );
     }
