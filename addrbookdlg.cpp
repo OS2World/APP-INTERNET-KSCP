@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 by KO Myung-Hun <komh@chollian.net>
+ * Copyright (c) 2012-2013 by KO Myung-Hun <komh@chollian.net>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms,
