@@ -1,0 +1,26 @@
+                          Upload Information Template for Hobbes.nmsu.edu
+                          ===============================================
+
+        Archive Filename: kscp@SHORT_VER@.zip
+       Short Description: KSCP v@VER@
+        Long Description: KSCP v@VER@
+                          SFTP client for OS/2
+
+      Proposed directory
+           for placement: /pub/os2/apps/internet/ftp/client
+
+               Your name: KO Myung-Hun
+           Email address: komh@chollian.net
+    Program contact name: (same)
+   Program contact email: (same)
+             Program URL: https://github.com/komh/kscp
+
+      Would you like the
+   contact email address
+    included in listings? yes
+
+Operating System/Version:
+ Additional requirements: kLIBC v0.6.5,
+                          OpenSSL 0.9.8r OS2-KNIX(http://bauxite.sakura.ne.jp/software/os2/#openssl)
+
+                Replaces: (none)
