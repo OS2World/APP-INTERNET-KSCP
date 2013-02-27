@@ -196,7 +196,7 @@ bool KSCPClient::CheckHostkey()
     return rc;
 }
 
-bool KSCPClient::ReadDir( const string& strDir )
+bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
 {
     LIBSSH2_SFTP_HANDLE* sftp_handle;
     PKSCPRECORD          pkr;
@@ -314,10 +314,23 @@ bool KSCPClient::ReadDir( const string& strDir )
     ulStyle |=  CCS_SINGLESEL;
     _kcnr.SetWindowULong( QWL_STYLE, ulStyle );
 
-    // Select the first item and clear emphasis of other item
-    _kcnr.SetRecordEmphasis(
-        _kcnr.QueryRecord( 0, CMA_FIRST, CMA_ITEMORDER ), true,
-        CRA_CURSORED | CRA_SELECTED );
+    if( strSelected.empty())
+        pkr = _kcnr.QueryRecord( 0, CMA_FIRST, CMA_ITEMORDER );
+    else
+    {
+        SEARCHSTRING ss;
+
+        ss.cb              = sizeof( ss );
+        ss.pszSearch       = CSTR2PSZ( strSelected.c_str());
+        ss.fsPrefix        = TRUE;
+        ss.fsCaseSensitive = TRUE;
+        ss.usView          = CV_DETAIL;
+
+        pkr = _kcnr.SearchString( &ss, CMA_FIRST );
+    }
+
+    // Select the searched item and clear emphasis of other item
+    _kcnr.SetRecordEmphasis( pkr, true, CRA_CURSORED | CRA_SELECTED );
 
     // Change a selection type to a extend selection
     ulStyle  = _kcnr.QueryWindowULong( QWL_STYLE );
@@ -325,9 +338,25 @@ bool KSCPClient::ReadDir( const string& strDir )
     ulStyle |=  CCS_EXTENDSEL;
     _kcnr.SetWindowULong( QWL_STYLE, ulStyle );
 
-    // Scroll to the top
-    _kcnr.PostMsg( WM_CHAR, MPFROMSHORT( KC_VIRTUALKEY ),
-                   MPFROM2SHORT( 0, VK_HOME ));
+    // Scroll to the record
+    QUERYRECORDRECT qrr;
+    RECTL           rcl;
+
+    qrr.cb                = sizeof( qrr );
+    qrr.pRecord           = reinterpret_cast< PRECORDCORE >( pkr );
+    qrr.fRightSplitWindow = FALSE;
+    qrr.fsExtent          = 0;
+    _kcnr.QueryRecordRect( &rcl, &qrr );
+
+    RECTL rclView;
+
+    _kcnr.QueryViewportRect( &rclView, CMA_WINDOW, false );
+
+    // if possible, position to the middle of a window
+    int y;
+
+    y = (( rclView.yTop - rclView.yBottom ) - ( rcl.yTop - rcl.yBottom )) / 2;
+    _kcnr.ScrollWindow( CMA_VERTICAL, y - rcl.yBottom );
 
     return true;
 }
@@ -1434,26 +1463,30 @@ MRESULT KSCPClient::CnEnter( ULONG ulParam )
     pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
     if( LIBSSH2_SFTP_S_ISDIR( pattr->permissions ))
     {
-        string strNewDir;
+        string strNewDir, strChildDir;
 
         if( strcmp( pkr->pszName, ".."))
             strNewDir = _strCurDir + pkr->pszName + "/";
         else if( _strCurDir[ 1 ]) // not root ?
         {
+            strNewDir = _strCurDir;
+
             // remove the last '/'
-           _strCurDir.erase( _strCurDir.end() - 1 );
+            strNewDir.erase( strNewDir.end() - 1 );
+            strChildDir = strNewDir;
 
             // remove the last directory part
-            _strCurDir.erase( _strCurDir.find_last_of('/') + 1 );
+            strNewDir.erase( strNewDir.find_last_of('/') + 1 );
 
-            strNewDir = _strCurDir;
+            // remove the parent directory part
+            strChildDir.erase( 0, strChildDir.find_last_of('/') + 1 );
         }
 
         if( !strNewDir.empty())
         {
             RemoveRecordAll();
 
-            if( !ReadDir( strNewDir ))
+            if( !ReadDir( strNewDir, strChildDir ))
                 ReadDir( _strCurDir );
             else
                 _strCurDir = strNewDir;

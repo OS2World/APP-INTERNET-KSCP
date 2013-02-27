@@ -58,7 +58,7 @@ private :
 
     void QuerySSHHome( string& strHome );
     bool CheckHostkey();
-    bool ReadDir( const string& strDir );
+    bool ReadDir( const string& strDir, const string& strSelected = "" );
     void ConnectMain( u_long to_addr, int port, int timeout,
                       HEV hevDone, int* piResult );
     int  Connect( u_long to_addr, int port, int timeout );
