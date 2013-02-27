@@ -294,7 +294,7 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
             pkr->mrc.pszIcon   = pkr->pszName;
 
             ri.cb                = sizeof( RECORDINSERT );
-            ri.pRecordOrder      = reinterpret_cast< PRECORDCORE >( CMA_END );
+            ri.pRecordOrder      = TOPRECC( CMA_END );
             ri.pRecordParent     = NULL;
             ri.zOrder            = CMA_TOP;
             ri.fInvalidateRecord = false;
@@ -648,7 +648,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     pfi->offStruct  = FIELDOFFSET(KSCPRECORD, pszDate);
 
     fii.cb                   = sizeof( FIELDINFOINSERT );
-    fii.pFieldInfoOrder      = reinterpret_cast< PFIELDINFO >( CMA_FIRST );
+    fii.pFieldInfoOrder      = TOPFI( CMA_FIRST );
     fii.cFieldInfoInsert     = 4;
     fii.fInvalidateFieldInfo = true;
 
@@ -818,9 +818,8 @@ PKSCPRECORD KSCPClient::FindRecord( PKSCPRECORD pkrStart, ULONG ulEM,
 
     LIBSSH2_SFTP_ATTRIBUTES* pattr;
 
-    pkr = _kcnr.QueryRecordEmphasis( pkrStart ? pkrStart :
-                                                reinterpret_cast< PKSCPRECORD >
-                                                    ( CMA_FIRST ),
+    pkr = _kcnr.QueryRecordEmphasis( pkrStart ?
+                                     pkrStart : _kcnr.I2PT( CMA_FIRST ),
                                      ulEM );
 
     while( pkr )
