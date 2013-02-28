@@ -143,6 +143,22 @@ bool KSCPClient::CheckHostkey()
     fingerprint = libssh2_hostkey_hash( _session, LIBSSH2_HOSTKEY_HASH_MD5 );
     if( fingerprint )
     {
+        switch( type )
+        {
+            case LIBSSH2_HOSTKEY_TYPE_RSA :
+                ssMsg << "RSA ";
+                break;
+
+            case LIBSSH2_HOSTKEY_TYPE_DSS :
+                ssMsg << "DSS ";
+                break;
+
+            default :
+                ssMsg << "Unknown ";
+        }
+
+        ssMsg << "key fingerprint is " << endl;
+
         for( int i = 0; i < 16; i++ )   // MD5 hash size is 16 bytes
         {
             ssMsg.width( 2 );
