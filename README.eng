@@ -1,4 +1,4 @@
-                                 KSCP v0.3.0
+                                 KSCP v0.4.0
                                 -------------
                             
 1. Introduction
@@ -32,7 +32,7 @@
 --------------------
 
   This program is tested on OS/2 Warp v4 for Korean with FixPak #15 and
-eComStation 1.2MR.
+eComStation 2.1.
 
 5. Installation
 ---------------
@@ -106,12 +106,20 @@ eComStation 1.2MR.
   - Support to browse a local directory
     
   - Support Drag & Drop
-
-  - Support public key authentication
   
+  - Improve a system response on processing a network task
+
 9. History
 ----------
 
+  - v0.4.0 ( 2013/02/28 )
+    .Support publickey authentication( RSA, DSS )
+    .Assign 'Delete' feature to 'DEL' key
+    .Assign 'Upload' feature to 'Ctrl-PgUp' key
+    .Select the child directory when cd to the parent directory
+    .System does not repond until connecting is completed. Fixed
+    .Improve many user interactions
+    
   - v0.3.0 ( 2012/08/18 )
     .Support to delete files
     .Support to rename a file or a directory
