@@ -94,6 +94,11 @@ int KSCPClient::CallWorker( const string& strTitle,
     {
         _fCanceled = true;
 
+        KMenu kmSys;
+
+        _kdlg.WindowFromID( FID_SYSMENU, kmSys );
+        kmSys.SetItemAttr( SC_CLOSE, true, MIA_DISABLED, MIA_DISABLED );
+
         KWindow kwnd;
 
         _kdlg.WindowFromID( DID_CANCEL, kwnd );
