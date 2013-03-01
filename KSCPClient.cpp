@@ -58,8 +58,6 @@
 
 #include "kscp.h"
 
-#include "KRemoteWorkThread.h"
-#include "KLocalWorkThread.h"
 #include "KWorkerThread.h"
 
 #include "KSCPClient.h"
@@ -1129,8 +1127,10 @@ exit_free:
     return rc;
 }
 
-void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
+void KSCPClient::RemoteWorker( void* arg )
 {
+    RemoteParam* rp = reinterpret_cast< RemoteParam* >( arg );
+
     PKSCPRECORD pkr;
 
     stringstream ssMsg;
@@ -1153,10 +1153,10 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, ssMsg.str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, pkr->pszName );
 
-        ( this->*pCallback )( pkr );
+        ( this->*rp->pCallback )( pkr );
     }
 
-    _kdlg.DismissDlg( _fCanceled ? DID_CANCEL : DID_OK );
+    _kdlg.DismissDlg( DID_OK );
 
     _fBusy = false;
 }
@@ -1164,8 +1164,6 @@ void KSCPClient::RemoteMain( PFN_REMOTE_CALLBACK pCallback )
 int KSCPClient::KSCPDownload()
 {
     stringstream ssMsg;
-
-    ULONG ulReply;
 
     if( _fBusy )
     {
@@ -1182,24 +1180,12 @@ int KSCPClient::KSCPDownload()
         return 1;
     }
 
-    _fCanceled = false;
+    RemoteParam rp = { &KSCPClient::Download };
 
-    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
-
-    RemoteParam rpParam = { this, &KSCPClient::Download };
-    KRemoteWorkThread thread;
-    thread.BeginThread( &rpParam );
-
-    _kdlg.ProcessDlg();
-    ulReply = _kdlg.GetResult();
-    if( ulReply == DID_CANCEL )
-        _fCanceled = true;
-
-    _kdlg.DestroyWindow();
+    int rc = CallWorker("Download", &KSCPClient::RemoteWorker, &rp );
 
     ssMsg << "Download "
-          << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+          << ( rc < 0  ? "CANCELED" : "COMPLETED");
 
     MessageBox( ssMsg.str(), "Download", MB_OK | MB_INFORMATION );
 
@@ -1358,8 +1344,10 @@ exit_fclose :
     return rc;
 }
 
-void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
+void KSCPClient::LocalWorker( void* arg )
 {
+    LocalParam* lp = reinterpret_cast< LocalParam* >( arg );
+
     KFDVECSTR vsList = _kfd.GetFQFilename();
     ULONG ulCount    = _kfd.GetFQFCount();
 
@@ -1374,10 +1362,10 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
         ssMsg << i + 1 << " of " << ulCount;
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX,  ssMsg.str());
         _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, vsList[ i ]);
-        (this->*pCallback)( vsList[ i ]);
+        (this->*lp->pCallback)( vsList[ i ]);
     }
 
-    _kdlg.DismissDlg( _fCanceled ? DID_CANCEL : DID_OK );
+    _kdlg.DismissDlg( DID_OK );
 
     _fBusy = false;
 }
@@ -1385,7 +1373,6 @@ void KSCPClient::LocalMain( PFN_LOCAL_CALLBACK pCallback )
 int KSCPClient::KSCPUpload()
 {
     stringstream ssMsg;
-    ULONG        ulReply;
 
     if( _fBusy )
     {
@@ -1401,26 +1388,12 @@ int KSCPClient::KSCPUpload()
     if( !_kfd.FileDlg( KWND_DESKTOP, this ) || _kfd.GetReturn() != DID_OK )
         return 1;
 
-    _fCanceled = false;
+    LocalParam lp = { &KSCPClient::Upload };
 
-    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
-
-    _kdlg.SetWindowText("Upload");
-
-    LocalParam lpParam = { this, &KSCPClient::Upload };
-    KLocalWorkThread thread;
-    thread.BeginThread( &lpParam );
-
-    _kdlg.ProcessDlg();
-    ulReply = _kdlg.GetResult();
-    if( ulReply == DID_CANCEL )
-        _fCanceled = true;
-
-    _kdlg.DestroyWindow();
+    int rc = CallWorker("Upload", &KSCPClient::LocalWorker, &lp );
 
     ssMsg << "Upload "
-          << ( ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+          << ( rc < 0 ? "CANCELED" : "COMPLETED");
 
     MessageBox( ssMsg.str(), "Upload", MB_OK | MB_INFORMATION );
 
@@ -1454,7 +1427,6 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
 int KSCPClient::KSCPDelete()
 {
     stringstream ssMsg;
-    ULONG        ulReply;
 
     if( _fBusy )
     {
@@ -1475,28 +1447,12 @@ int KSCPClient::KSCPDelete()
                    MB_YESNO | MB_ICONQUESTION ) == MBID_NO )
         return 1;
 
-    _fCanceled = false;
+    RemoteParam rp = { &KSCPClient::Delete };
 
-    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
-
-    _kdlg.SetWindowText("Delete");
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, "");
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, "");
-
-    RemoteParam rpParam = { this, &KSCPClient::Delete };
-    KRemoteWorkThread thread;
-    thread.BeginThread( &rpParam );
-
-    _kdlg.ProcessDlg();
-    ulReply = _kdlg.GetResult();
-    if( ulReply == DID_CANCEL )
-        _fCanceled = true;
-
-    _kdlg.DestroyWindow();
+    int rc = CallWorker("Delete", &KSCPClient::RemoteWorker, &rp );
 
     ssMsg << "Delete "
-          << (ulReply == DID_CANCEL ? "CANCELED" : "COMPLETED");
+          << ( rc < 0 ? "CANCELED" : "COMPLETED");
 
     MessageBox( ssMsg.str(), "Delete", MB_OK | MB_INFORMATION );
 

@@ -72,8 +72,6 @@ protected :
     virtual MRESULT CmdSrcAccelerator( USHORT usCmd, bool fPointer );
 
 private :
-    friend class KRemoteWorkThread;
-    friend class KLocalWorkThread;
     friend class KWorkerThread;
 
     KFrameWindow        _kframe;
@@ -134,21 +132,19 @@ private :
 
     struct RemoteParam
     {
-        KSCPClient* pkscpc;
         PFN_REMOTE_CALLBACK pCallback;
     };
 
-    void RemoteMain( PFN_REMOTE_CALLBACK pCallback );
+    void RemoteWorker( void* arg );
 
     typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const string& );
 
     struct LocalParam
     {
-        KSCPClient* pkscpc;
         PFN_LOCAL_CALLBACK pCallback;
     };
 
-    void LocalMain( PFN_LOCAL_CALLBACK pCallback );
+    void LocalWorker( void* arg );
 
     int Download( PKSCPRECORD pkr );
     int KSCPDownload();

@@ -67,8 +67,6 @@ PROGRAM_RC = $(PROGRAM)rc
 SRCS = kscp.cpp \
        addrbookdlg.cpp \
        KSCPClient.cpp \
-       KRemoteWorkThread.cpp \
-       KLocalWorkThread.cpp \
        ServerInfoVector.cpp \
        KAddrBookDlg.cpp
 
