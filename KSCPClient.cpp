@@ -721,6 +721,9 @@ void KSCPClient::ConnectWorker( void* arg )
     /* Since we have not set non-blocking, tell libssh2 we are blocking */
     libssh2_session_set_blocking( _session, 1 );
 
+    /* Tell libssh2 to wait up to MAX_WAIT_TIME for blocking functions */
+    libssh2_session_set_timeout( _session, MAX_WAIT_TIME );
+
     _kdlg.DismissDlg( DID_OK );
 
     _iResult = 0;
