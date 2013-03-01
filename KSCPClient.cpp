@@ -1500,7 +1500,7 @@ void KSCPClient::Rename( PKSCPRECORD pkr )
         pkr->mrc.pszIcon = pkr->pszName;
     }
 
-    _kcnr.SortRecordP();
+    _kcnr.SortRecord();
 }
 
 int KSCPClient::KSCPRename()
