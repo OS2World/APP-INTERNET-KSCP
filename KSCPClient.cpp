@@ -365,8 +365,29 @@ void KSCPClient::ReadDirWorker( void* arg )
         /* loop until we fail */
         rc = libssh2_sftp_readdir_ex( sftp_handle, mem, sizeof( mem ),
                                       longentry, sizeof( longentry ), &attrs );
+
         if( rc <= 0 )
+        {
+            if( rc < 0 )
+            {
+                stringstream ssMsg;
+                char* errmsg;
+
+                libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+
+                ssMsg << "Unable to read dir with SFTP :" << endl
+                      << errmsg;
+
+                _kdlg.MessageBox( ssMsg.str(), _strAddress,
+                                  MB_OK | MB_ERROR );
+
+                _iResult = 1;
+
+                goto exit_closedir;
+            }
+
             break;
+        }
 
         if( strcmp( mem, ".")) {
             HPOINTER hptrIcon = _hptrDefaultFile;
@@ -451,8 +472,6 @@ void KSCPClient::ReadDirWorker( void* arg )
         }
     }
 
-    libssh2_sftp_closedir( sftp_handle );
-
     _kcnr.InvalidateRecord( 0, 0, CMA_REPOSITION );
 
     // Change a selection type to a single selection
@@ -506,6 +525,9 @@ void KSCPClient::ReadDirWorker( void* arg )
     _kcnr.ScrollWindow( CMA_VERTICAL, y - rcl.yBottom );
 
     _iResult = 0;
+
+exit_closedir :
+    libssh2_sftp_closedir( sftp_handle );
 
 exit_dismiss :
 
