@@ -110,6 +110,8 @@ int KSCPClient::CallWorker( const string& strTitle,
         _kdlg.SetWindowUShort( QWS_FLAGS,
                                _kdlg.QueryWindowUShort( QWS_FLAGS ) &
                                    ~FF_DLGDISMISSED );
+        _kdlg.SetFocus();
+
         _kdlg.ProcessDlg();
     }
 
