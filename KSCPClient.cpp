@@ -60,13 +60,62 @@
 
 #include "KRemoteWorkThread.h"
 #include "KLocalWorkThread.h"
-#include "KConnectThread.h"
+#include "KWorkerThread.h"
 
 #include "KSCPClient.h"
 
 #define IDC_CONTAINER   1
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"
+
+/**
+ * Return : < 0 on cancel
+ *            0 on success
+ *          > 0 on error
+ */
+int KSCPClient::CallWorker( const string& strTitle,
+                            PFN_WORKER pfnWorker, void* arg )
+{
+    _fCanceled = false;
+
+    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
+    _kdlg.Centering();
+    _kdlg.SetWindowText( strTitle );
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, "");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, "");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, "");
+    _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, "");
+
+    WorkerParam wp = { this, pfnWorker, arg };
+
+    KWorkerThread thread;
+    thread.BeginThread( &wp );
+
+    _kdlg.ProcessDlg();
+    if( _kdlg.GetResult() == DID_CANCEL )
+    {
+        _fCanceled = true;
+
+        KWindow kwnd;
+
+        _kdlg.WindowFromID( DID_CANCEL, kwnd );
+        kwnd.ShowWindow( false );
+
+        _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS,
+                              "Canceling, please wait...");
+
+        _kdlg.SetWindowUShort( QWS_FLAGS,
+                               _kdlg.QueryWindowUShort( QWS_FLAGS ) &
+                                   ~FF_DLGDISMISSED );
+        _kdlg.ProcessDlg();
+    }
+
+    _kdlg.DestroyWindow();
+
+    thread.WaitThread();
+
+    return _fCanceled ? -1 : _iResult;
+}
 
 void KSCPClient::QuerySSHHome( string& strHome )
 {
@@ -264,13 +313,23 @@ bool KSCPClient::CheckHostkey()
     return rc;
 }
 
-bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
+void KSCPClient::ReadDirWorker( void* arg )
 {
+    const string** ppstrArg    = reinterpret_cast< const string** >( arg );
+    const string&  strDir      = *ppstrArg[ 0 ];
+    const string&  strSelected = *ppstrArg[ 1 ];
+
     LIBSSH2_SFTP_HANDLE* sftp_handle;
     PKSCPRECORD          pkr;
     RECORDINSERT         ri;
     ULONG                ulStyle;
     int                  rc;
+
+    KStaticText kstStatus;
+
+    _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
+    kstStatus.Centering();
+    kstStatus.SetWindowText("Reading directory...");
 
     cerr << "libssh2_sftp_opendir()!" << endl;
     /* Request a dir listing via SFTP */
@@ -287,10 +346,12 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
 
         MessageBox( ssMsg.str(), _strAddress,  MB_OK | MB_ERROR );
 
-        return false;
+        _iResult = 1;
+
+        goto exit_dismiss;
     }
     cerr << "libssh2_sftp_opendir() is done, now receive listing!" << endl;
-    while( 1 )
+    while( !_fCanceled )
     {
         char mem[ 512 ];
         char longentry[ 512 ];
@@ -439,11 +500,29 @@ bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
     y = (( rclView.yTop - rclView.yBottom ) - ( rcl.yTop - rcl.yBottom )) / 2;
     _kcnr.ScrollWindow( CMA_VERTICAL, y - rcl.yBottom );
 
-    return true;
+    _iResult = 0;
+
+exit_dismiss :
+
+    _kdlg.DismissDlg( DID_OK );
 }
 
-void KSCPClient::ConnectMain( u_long to_addr, int port, int timeout,
-                              HEV hevDone, int* piResult )
+bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
+{
+    int rc;
+
+    const string* apstrArg[] = { &strDir, &strSelected };
+
+    rc = CallWorker( _strAddress, &KSCPClient::ReadDirWorker, apstrArg );
+
+    // Canceled ?
+    if( rc < 0 )
+        RemoveRecordAll();
+
+    return !rc;
+}
+
+int KSCPClient::ConnectEx( u_long to_addr, int port, int timeout )
 {
     int    flags;
     struct sockaddr_in sin;
@@ -497,77 +576,24 @@ void KSCPClient::ConnectMain( u_long to_addr, int port, int timeout,
 exit_set_fl :
     fcntl( _sock, F_SETFL, flags );
 
-    *piResult = _fCanceled ? -1 : rc;
-
-    _kdlg.DismissDlg( _fCanceled ? DID_CANCEL : DID_OK );
-
-    DosPostEventSem( hevDone );
-}
-
-int KSCPClient::Connect( u_long to_addr, int port, int timeout )
-{
-    HEV hevDone;
-    int iResult;
-
-    _fCanceled = false;
-
-    DosCreateEventSem( NULL, &hevDone, 0, FALSE );
-
-    _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
-    _kdlg.SetWindowText( _strAddress );
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, "");
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, "");
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, "Connecting, please wait...");
-    _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, "");
-
-    void* apArg[] = { this, &to_addr, &port, &timeout, &hevDone, &iResult };
-
-    KConnectThread thread;
-    thread.BeginThread( apArg );
-
-    _kdlg.ProcessDlg();
-    if( _kdlg.GetResult() == DID_CANCEL )
-        _fCanceled = true;
-
-    _kdlg.DestroyWindow();
-
-    WinWaitEventSem( hevDone, SEM_INDEFINITE_WAIT );
-    DosCloseEventSem( hevDone );
-
-    return iResult;
+    return _fCanceled ? -1 : rc;
 }
 
 #define SSH_PORT        22
 #define MAX_WAIT_TIME   ( 10 * 1000 )
 
-bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
+void KSCPClient::ConnectWorker( void* arg )
 {
-    stringstream       ssMsg;
-    char*              errmsg;
-    struct hostent*    host;
-    PFIELDINFO         pfi, pfiStart;
-    FIELDINFOINSERT    fii;
-    CNRINFO            ci;
-    int                rc;
-    RECTL              rcl;
+    PSERVERINFO     psi = reinterpret_cast< PSERVERINFO >( arg );
+    stringstream    ssMsg;
+    char*           errmsg;
+    struct hostent* host;
+    int             rc;
 
-    KWindow kwnd;
+    KStaticText kstStatus;
 
-    if( _sock != -1 )
-    {
-        if( fQuery )
-        {
-            if( MessageBox("You have a connection.\n"\
-                           "Are you sure to connect to a new host "\
-                           "after disconnecting this session ?",
-                            _strAddress, MB_YESNO | MB_QUERY ) !=
-                MBID_YES )
-                return false;
-        }
-
-        KSCPDisconnect();
-    }
+    _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
+    kstStatus.Centering();
 
     _strAddress = psi->strAddress;
     _strCurDir  = psi->strDir;
@@ -578,6 +604,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
      */
     _sock = socket( AF_INET, SOCK_STREAM, 0 );
 
+    kstStatus.SetWindowText("Resolving host...");
     host = gethostbyname( _strAddress.c_str());
     if( !host )
     {
@@ -589,8 +616,9 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
         goto exit_close_socket;
     }
 
-    rc = Connect( *reinterpret_cast< u_long* >( host->h_addr ), SSH_PORT,
-                  MAX_WAIT_TIME );
+    kstStatus.SetWindowText("Connecting...");
+    rc = ConnectEx( *reinterpret_cast< u_long* >( host->h_addr ), SSH_PORT,
+                    MAX_WAIT_TIME );
     if( rc != 0 )
     {
         ssMsg << "Failed to connect to " << _strAddress << " :" << endl
@@ -601,12 +629,14 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
         goto exit_close_socket;
     }
 
+    kstStatus.SetWindowText("Initializing SSH session...");
     /* Create a session instance
      */
     _session = libssh2_session_init();
     if( !_session )
         goto exit_close_socket;
 
+    kstStatus.SetWindowText("Establishing SSH session...");
     /* ... start it up. This will trade welcome banners, exchange keys,
      * and setup crypto, compression, and MAC layers
      */
@@ -621,6 +651,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
         goto exit_session_free;
     }
 
+    kstStatus.SetWindowText("Checking a hostkey...");
     /* At this point we havn't yet authenticated.  The first thing to do
      * is check the hostkey's fingerprint against our known hosts Your app
      * may have it hard coded, may go to a file, may present it to the
@@ -629,6 +660,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
     if( !CheckHostkey())
         goto exit_session_disconnect;
 
+    kstStatus.SetWindowText("Authenticating...");
     if( psi->iAuth == 0 )
     {
         /* We could authenticate via password */
@@ -675,6 +707,7 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
         }
     }
 
+    kstStatus.SetWindowText("Initializaing SFTP session...");
     cerr << "libssh2_sftp_init()!" << endl;
     _sftp_session = libssh2_sftp_init( _session );
 
@@ -690,6 +723,67 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
 
     /* Since we have not set non-blocking, tell libssh2 we are blocking */
     libssh2_session_set_blocking( _session, 1 );
+
+    _kdlg.DismissDlg( DID_OK );
+
+    _iResult = 0;
+
+    return;
+
+exit_session_disconnect :
+    libssh2_session_disconnect( _session, "Abnormal Shutdown");
+
+exit_session_free :
+    libssh2_session_free( _session );
+    _session = NULL;
+
+exit_close_socket :
+    close( _sock );
+    _sock = -1;
+
+    _strCurDir.clear();
+    _strAddress.clear();
+
+    _kdlg.DismissDlg( DID_OK );
+
+    _iResult = 1;
+}
+
+bool KSCPClient::Connect( PSERVERINFO psi )
+{
+    int rc = CallWorker( psi->strAddress, &KSCPClient::ConnectWorker, psi );
+
+    // Canceled ?
+    if( rc < 0 )
+        KSCPDisconnect();
+
+    return !rc;
+}
+
+bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
+{
+    if( _sock != -1 )
+    {
+        if( fQuery )
+        {
+            if( MessageBox("You have a connection.\n"\
+                           "Are you sure to connect to a new host "\
+                           "after disconnecting this session ?",
+                            _strAddress, MB_YESNO | MB_QUERY ) !=
+                MBID_YES )
+                return false;
+        }
+
+        KSCPDisconnect();
+    }
+
+    if( !Connect( psi ))
+        return false;
+
+    RECTL           rcl;
+    PFIELDINFO      pfi, pfiStart;
+    FIELDINFOINSERT fii;
+    CNRINFO         ci;
 
     QueryWindowRect( &rcl );
 
@@ -749,35 +843,17 @@ bool KSCPClient::KSCPConnect( PSERVERINFO psi, bool fQuery )
                       CMA_SLBITMAPORICON );
 
     if( !ReadDir( psi->strDir ))
-        goto exit_destroy_window;
+    {
+        KSCPDisconnect();
+
+        return false;
+    }
 
     _kcnr.SetFocus();
 
     _kframe.SetWindowText( string( KSCP_TITLE ) + " - " + _strAddress );
 
     return true;
-
-exit_destroy_window :
-    _kcnr.DestroyWindow();
-
-    libssh2_sftp_shutdown( _sftp_session );
-    _sftp_session = NULL;
-
-exit_session_disconnect :
-    libssh2_session_disconnect( _session, "Abnormal Shutdown");
-
-exit_session_free :
-    libssh2_session_free( _session );
-    _session = NULL;
-
-exit_close_socket :
-    close( _sock );
-    _sock = -1;
-
-    _strCurDir.clear();
-    _strAddress.clear();
-
-    return false;
 }
 
 void KSCPClient::RemoveRecordAll()

@@ -74,7 +74,7 @@ protected :
 private :
     friend class KRemoteWorkThread;
     friend class KLocalWorkThread;
-    friend class KConnectThread;
+    friend class KWorkerThread;
 
     KFrameWindow        _kframe;
     KSCPContainer       _kcnr;
@@ -93,13 +93,27 @@ private :
     bool                _fCanceled;
     string              _strAddress;
     bool                _fCnrEditing;
+    int                 _iResult;
+
+    typedef void ( KSCPClient::*PFN_WORKER )( void* arg );
+
+    struct WorkerParam
+    {
+        KSCPClient* pkscpc;
+        PFN_WORKER  pfnWorker;
+        void*       arg;
+    };
+
+    int  CallWorker( const string& strTitle, PFN_WORKER pfnWorker,
+                     void* arg = 0 );
 
     void QuerySSHHome( string& strHome );
     bool CheckHostkey();
+    void ReadDirWorker( void* arg );
     bool ReadDir( const string& strDir, const string& strSelected = "" );
-    void ConnectMain( u_long to_addr, int port, int timeout,
-                      HEV hevDone, int* piResult );
-    int  Connect( u_long to_addr, int port, int timeout );
+    int  ConnectEx( u_long to_addr, int port, int timeout );
+    void ConnectWorker( void* arg );
+    bool Connect( PSERVERINFO psi );
     bool KSCPConnect( PSERVERINFO psi, bool fQuery = true );
 
     void RemoveRecordAll();
