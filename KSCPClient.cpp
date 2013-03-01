@@ -161,9 +161,8 @@ bool KSCPClient::CheckHostkey()
 
         ssMsg << "Failed to query a hostkey :" << endl
               << errmsg;
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
-        return rc;
+        goto exit_messagebox;
     }
 
     nh = libssh2_knownhost_init( _session );
@@ -173,9 +172,8 @@ bool KSCPClient::CheckHostkey()
 
         ssMsg << "Failed to initialize a known host :" << endl
               << errmsg;
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
-        return rc;
+        goto exit_messagebox;
     }
 
     QuerySSHHome( strKnownHostFile );
@@ -279,8 +277,7 @@ bool KSCPClient::CheckHostkey()
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             ssMsg << "Failed to add a hostkey :" << endl
                   << errmsg;
-
-            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+            // go to free knownhost and to display a message
         }
         else
         {
@@ -302,13 +299,16 @@ bool KSCPClient::CheckHostkey()
                 ssMsg << "Failed to write to "
                       << strKnownHostFile << " :" << endl
                       << errmsg;
-
-                MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+                // go to free knownhost and to display a message
             }
         }
     }
 
     libssh2_knownhost_free( nh );
+
+exit_messagebox :
+    if( !rc )
+        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     return rc;
 }
@@ -611,8 +611,6 @@ void KSCPClient::ConnectWorker( void* arg )
         ssMsg << "Cannot resolve host " << _strAddress << " :" << endl
               << strerror( sock_errno());
 
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
-
         goto exit_close_socket;
     }
 
@@ -623,8 +621,6 @@ void KSCPClient::ConnectWorker( void* arg )
     {
         ssMsg << "Failed to connect to " << _strAddress << " :" << endl
               << ( rc > 0 ? strerror( rc ) : "Canceled");
-
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_close_socket;
     }
@@ -646,7 +642,6 @@ void KSCPClient::ConnectWorker( void* arg )
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         ssMsg << "Failed to establish SSH session :" << endl
               << errmsg;
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_free;
     }
@@ -670,7 +665,6 @@ void KSCPClient::ConnectWorker( void* arg )
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             ssMsg << "Authentication by password failed :" << endl
                   << errmsg;
-            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -701,7 +695,6 @@ void KSCPClient::ConnectWorker( void* arg )
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             ssMsg << "Authentication by public key failed :" << endl
                   << errmsg;
-            MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
             goto exit_session_disconnect;
         }
@@ -716,7 +709,6 @@ void KSCPClient::ConnectWorker( void* arg )
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         ssMsg << "Unable to init SFTP session :" << endl
               << errmsg;
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
         goto exit_session_disconnect;
     }
@@ -743,6 +735,8 @@ exit_close_socket :
 
     _strCurDir.clear();
     _strAddress.clear();
+
+    MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     _kdlg.DismissDlg( DID_OK );
 
