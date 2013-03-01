@@ -246,10 +246,10 @@ bool KSCPClient::CheckHostkey()
     }
 
     if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH )
-        rc = MessageBox( ssMsg.str(), _strAddress,
-                         check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
-                            ( MB_YESNO | MB_QUERY ) :
-                            ( MB_OK | MB_WARNING )) == MBID_YES;
+        rc = _kdlg.MessageBox( ssMsg.str(), _strAddress,
+                               check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
+                                   ( MB_YESNO | MB_QUERY ) :
+                                   ( MB_OK | MB_WARNING )) == MBID_YES;
 
     if( rc && check == LIBSSH2_KNOWNHOST_CHECK_NOTFOUND )
     {
@@ -306,7 +306,7 @@ bool KSCPClient::CheckHostkey()
 
 exit_messagebox :
     if( !rc )
-        MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     return rc;
 }
@@ -342,7 +342,7 @@ void KSCPClient::ReadDirWorker( void* arg )
         ssMsg << "Unable to open dir with SFTP :" << endl
               << errmsg;
 
-        MessageBox( ssMsg.str(), _strAddress,  MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), _strAddress,  MB_OK | MB_ERROR );
 
         _iResult = 1;
 
@@ -734,7 +734,7 @@ exit_close_socket :
     _strCurDir.clear();
     _strAddress.clear();
 
-    MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
+    _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     _kdlg.DismissDlg( DID_OK );
 
@@ -1040,7 +1040,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         ssMsg << "Cannot open " << strSFTPPath << " :" << endl
               << errmsg;
 
-        MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -1057,8 +1057,8 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         ssMsg << buf << endl
               << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( ssMsg.str(), "Download",
-                              MB_YESNO | MB_ICONQUESTION );
+        ulReply = _kdlg.MessageBox( ssMsg.str(), "Download",
+                                    MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
             goto exit_free;
@@ -1071,7 +1071,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         ssMsg << "Cannot create " << buf << " :" << endl
               << strerror( errno );
 
-        MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
         goto exit_free;
     }
@@ -1215,7 +1215,7 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << "Ooops... This is not a file. Ignored." << endl
               << strName;
 
-        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -1226,7 +1226,7 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << "Cannot open " << strName << " :" << endl
               << strerror( errno );
 
-        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         return rc;
     }
@@ -1244,8 +1244,8 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << strSFTPPath << endl
               << "already exists. Overwrite ?";
 
-        ulReply = MessageBox( ssMsg.str() , "Upload",
-                              MB_YESNO | MB_ICONQUESTION );
+        ulReply = _kdlg.MessageBox( ssMsg.str() , "Upload",
+                                    MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
             goto exit_fclose;
@@ -1267,7 +1267,7 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << "Cannot create " << strSFTPPath << " :" << endl
               << errmsg;
 
-        MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         goto exit_fclose;
     }
@@ -1316,8 +1316,7 @@ int KSCPClient::Upload( const string& strName )
                 ssMsg.str("");
                 ssMsg << "Ooops... Error occurs while uploading" << endl
                       << strName;
-                MessageBox( ssMsg.str(), "Upload",
-                            MB_OK | MB_ERROR );
+                _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
                 goto exit_free;
             }
 
@@ -1416,7 +1415,7 @@ int KSCPClient::Delete( PKSCPRECORD pkr )
         ssMsg << "Cannot delete " << strSFTPPath << " :" << endl
               << errmsg;
 
-        MessageBox( ssMsg.str(), "Delete", MB_OK | MB_ERROR );
+        _kdlg.MessageBox( ssMsg.str(), "Delete", MB_OK | MB_ERROR );
 
         return 1;
     }
