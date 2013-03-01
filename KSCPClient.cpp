@@ -1546,6 +1546,21 @@ int KSCPClient::KSCPRename()
     return 0;
 }
 
+int KSCPClient::KSCPRefresh()
+{
+    if( _fBusy )
+    {
+        MessageBox("Session is busy\nTry again, later", "Refresh",
+                   MB_OK | MB_ERROR );
+
+        return 1;
+    }
+
+    Refresh();
+
+    return 0;
+}
+
 MRESULT KSCPClient::CnContextMenu()
 {
     POINTL ptl;
@@ -1808,6 +1823,10 @@ MRESULT KSCPClient::CmdSrcMenu( USHORT usCmd, bool fPointer )
         case IDM_KSCP_RENAME :
             KSCPRename();
             break;
+
+        case IDM_KSCP_REFRESH :
+            KSCPRefresh();
+            break;
     }
 
     return 0;
@@ -1823,6 +1842,10 @@ MRESULT KSCPClient::CmdSrcAccelerator( USHORT usCmd, bool fPointer )
 
         case IDM_KSCP_DELETE :
             KSCPDelete();
+            break;
+
+        case IDM_KSCP_REFRESH :
+            KSCPRefresh();
             break;
     }
 

@@ -158,6 +158,8 @@ private :
     void Rename( PKSCPRECORD pkr );
     int  KSCPRename();
 
+    int KSCPRefresh();
+
     MRESULT CnContextMenu();
     MRESULT CnEnter( ULONG ulParam );
     MRESULT CnEdit( USHORT usNotifyCode, ULONG ulParam );
