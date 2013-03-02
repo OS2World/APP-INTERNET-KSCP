@@ -1052,6 +1052,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
     struct stat       statbuf;
     FILE*             fp;
+    string            strPath;
     char*             buf;
     libssh2_uint64_t  size;
     stringstream      ssMsg;
@@ -1080,13 +1081,16 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
 
     buf = new char[ BUF_SIZE ];
-    _makepath( buf, NULL, _strDlDir.c_str(), pkr->pszName, NULL );
+    strPath = _strDlDir;
+    if( strPath[ strPath.length() - 1 ] != '\\' )
+        strPath += "\\";
+    strPath += pkr->pszName;
 
-    if( !stat( buf, &statbuf ))
+    if( !stat( strPath.c_str(), &statbuf ))
     {
         ULONG ulReply;
 
-        ssMsg << buf << endl
+        ssMsg << strPath << endl
               << "already exists. Overwrite ?";
 
         ulReply = _kdlg.MessageBox( ssMsg.str(), "Download",
@@ -1096,11 +1100,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
             goto exit_free;
     }
 
-    fp = fopen( buf, "wb");
+    fp = fopen( strPath.c_str(), "wb");
     if( !fp )
     {
         ssMsg.str("");
-        ssMsg << "Cannot create " << buf << " :" << endl
+        ssMsg << "Cannot create " << strPath << " :" << endl
               << strerror( errno );
 
         _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
