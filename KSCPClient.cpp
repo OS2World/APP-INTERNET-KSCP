@@ -657,7 +657,11 @@ void KSCPClient::ConnectWorker( void* arg )
      */
     _session = libssh2_session_init();
     if( !_session )
+    {
+        ssMsg << "Failed to initialize SSH session";
+
         goto exit_close_socket;
+    }
 
     kstStatus.SetWindowText("Establishing SSH session...");
     /* ... start it up. This will trade welcome banners, exchange keys,
@@ -1056,6 +1060,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     char*             buf;
     libssh2_uint64_t  size;
     stringstream      ssMsg;
+    char*             errmsg;
 
     struct timeval tv1, tv2;
     long long      diffTime;
@@ -1067,15 +1072,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                                      LIBSSH2_FXF_READ, 0 );
     if( !sftp_handle )
     {
-        char* errmsg;
-
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         ssMsg << "Cannot open " << strSFTPPath << " :" << endl
               << errmsg;
 
-        _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
-
-        return rc;
+        goto exit_messagebox;
     }
 
     pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
@@ -1096,7 +1097,11 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                                     MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
+        {
+            rc = 0;
+
             goto exit_sftp_close;
+        }
     }
 
     fp = fopen( strPath.c_str(), "wb");
@@ -1106,8 +1111,6 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         ssMsg << "Cannot create " << strPath << " :" << endl
               << strerror( errno );
 
-        _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
-
         goto exit_sftp_close;
     }
 
@@ -1115,7 +1118,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
     if( pattr->filesize )
     {
-        int nRead;
+        int nRead, nWrite;
 
         for( size = diffTime = 0; !_fCanceled; )
         {
@@ -1134,12 +1137,32 @@ int KSCPClient::Download( PKSCPRECORD pkr )
             diffTime += ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
                         ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
 
-            if( nRead <= 0 )
+            if( nRead == 0 )
                 break;
+            else if( nRead < 0 )
+            {
+                libssh2_session_last_error( _session, &errmsg, NULL, 0 );
 
-            fwrite( buf, nRead, 1, fp );
+                ssMsg.str("");
+                ssMsg << "Cannot read data from " << strSFTPPath
+                      << " : " << endl
+                      << errmsg;
 
-            size += nRead;
+                goto exit_delete;
+            }
+
+            nWrite = fwrite( buf, 1, nRead, fp );
+            if( nWrite < nRead )
+            {
+                ssMsg.str("");
+                ssMsg << "Cannot write to " << strPath
+                      << " : " << endl
+                      << strerror( errno );
+
+                goto exit_delete;
+            }
+
+            size += nWrite;
 
             if( diffTime )
             {
@@ -1150,16 +1173,30 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                                       ssMsg.str());
             }
         }
+
+        if( size != pattr->filesize )
+        {
+            ssMsg.str("");
+            ssMsg << "Ooops... Error occurs while downloading :" << endl
+                  << strSFTPPath;
+
+            goto exit_delete;
+        }
     }
 
     rc = 0;
 
+exit_delete:
     delete[] buf;
 
     fclose( fp );
 
 exit_sftp_close :
     libssh2_sftp_close( sftp_handle );
+
+exit_messagebox :
+    if( rc )
+        _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
     return rc;
 }
@@ -1239,6 +1276,7 @@ int KSCPClient::Upload( const string& strName )
     off_t        size, fileSize;
     char*        buf;
     stringstream ssMsg;
+    char*        errmsg;
 
     struct stat statbuf;
 
@@ -1252,9 +1290,7 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << "Ooops... This is not a file. Ignored." << endl
               << strName;
 
-        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
-
-        return rc;
+        goto exit_messagebox;
     }
 
     fp = fopen( strName.c_str(), "rb");
@@ -1263,9 +1299,7 @@ int KSCPClient::Upload( const string& strName )
         ssMsg << "Cannot open " << strName << " :" << endl
               << strerror( errno );
 
-        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
-
-        return rc;
+        goto exit_messagebox;
     }
 
     fseeko( fp, 0, SEEK_END );
@@ -1285,7 +1319,11 @@ int KSCPClient::Upload( const string& strName )
                                     MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
+        {
+            rc = 0;
+
             goto exit_fclose;
+        }
     }
 
     sftp_handle = libssh2_sftp_open( _sftp_session, strSFTPPath.c_str(),
@@ -1297,14 +1335,10 @@ int KSCPClient::Upload( const string& strName )
                                      LIBSSH2_SFTP_S_IROTH );
     if( !sftp_handle )
     {
-        char* errmsg;
-
         libssh2_session_last_error( _session, &errmsg, NULL, 0 );
         ssMsg.str("");
         ssMsg << "Cannot create " << strSFTPPath << " :" << endl
               << errmsg;
-
-        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
         goto exit_fclose;
     }
@@ -1326,10 +1360,17 @@ int KSCPClient::Upload( const string& strName )
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
             nRead = fread( buf, 1, BUF_SIZE, fp );
-            if( nRead <= 0 )
+            if( nRead == 0 && feof( fp ))
                 break;
+            else if( nRead < BUF_SIZE && ferror( fp ))
+            {
+                ssMsg.str("");
+                ssMsg << "Cannot read data from " << strName
+                      << " :" << endl
+                      << strerror( errno );
 
-            size += nRead;
+                goto exit_delete;
+            }
 
             for( ptr = buf; nRead; )
             {
@@ -1342,19 +1383,20 @@ int KSCPClient::Upload( const string& strName )
                             ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
 
                 if( nWrite < 0 )
-                    break;
+                {
+                    libssh2_session_last_error( _session, &errmsg, NULL, 0 );
+
+                    ssMsg.str("");
+                    ssMsg << "Cannot write to " << strSFTPPath
+                          << " :" << endl
+                          << errmsg;
+
+                    goto exit_delete;
+                }
 
                 ptr   += nWrite;
                 nRead -= nWrite;
-            }
-
-            if( nRead )
-            {
-                ssMsg.str("");
-                ssMsg << "Ooops... Error occurs while uploading" << endl
-                      << strName;
-                _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
-                goto exit_sftp_close;
+                size  += nWrite;
             }
 
             if( diffTime )
@@ -1365,17 +1407,30 @@ int KSCPClient::Upload( const string& strName )
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, ssMsg.str());
             }
         }
+
+        if( size != fileSize )
+        {
+            ssMsg.str("");
+            ssMsg << "Ooops... Error occurs while uploading :" << endl
+                  << strName;
+
+            goto exit_delete;
+        }
     }
 
     rc = 0;
 
-exit_sftp_close :
-    libssh2_sftp_close( sftp_handle );
-
+exit_delete :
     delete[] buf;
+
+    libssh2_sftp_close( sftp_handle );
 
 exit_fclose :
     fclose( fp );
+
+exit_messagebox :
+    if( rc )
+        _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
 
     return rc;
 }
