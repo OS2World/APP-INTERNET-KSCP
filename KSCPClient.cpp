@@ -1080,7 +1080,6 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
     pattr = reinterpret_cast< LIBSSH2_SFTP_ATTRIBUTES* >( pkr->pbAttr );
 
-    buf = new char[ BUF_SIZE ];
     strPath = _strDlDir;
     if( strPath[ strPath.length() - 1 ] != '\\' )
         strPath += "\\";
@@ -1097,7 +1096,7 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                                     MB_YESNO | MB_ICONQUESTION );
 
         if( ulReply == MBID_NO )
-            goto exit_free;
+            goto exit_sftp_close;
     }
 
     fp = fopen( strPath.c_str(), "wb");
@@ -1109,8 +1108,10 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
         _kdlg.MessageBox( ssMsg.str(), "Download", MB_OK | MB_ERROR );
 
-        goto exit_free;
+        goto exit_sftp_close;
     }
+
+    buf = new char[ BUF_SIZE ];
 
     if( pattr->filesize )
     {
@@ -1151,13 +1152,13 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         }
     }
 
-    fclose( fp );
-
     rc = 0;
 
-exit_free:
     delete[] buf;
 
+    fclose( fp );
+
+exit_sftp_close :
     libssh2_sftp_close( sftp_handle );
 
     return rc;
