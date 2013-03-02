@@ -1349,7 +1349,7 @@ int KSCPClient::Upload( const string& strName )
                 ssMsg << "Ooops... Error occurs while uploading" << endl
                       << strName;
                 _kdlg.MessageBox( ssMsg.str(), "Upload", MB_OK | MB_ERROR );
-                goto exit_free;
+                goto exit_sftp_close;
             }
 
             if( diffTime )
@@ -1362,11 +1362,11 @@ int KSCPClient::Upload( const string& strName )
         }
     }
 
-    libssh2_sftp_close( sftp_handle );
-
     rc = 0;
 
-exit_free :
+exit_sftp_close :
+    libssh2_sftp_close( sftp_handle );
+
     delete[] buf;
 
 exit_fclose :
