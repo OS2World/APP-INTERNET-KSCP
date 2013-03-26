@@ -154,7 +154,7 @@ bool KSCPClient::CheckHostkey()
     const char*         fingerprint;
     size_t              hostkeylen;
     int                 type;
-    int                 check = -1;
+    int                 check;
     char*               errmsg;
     stringstream        ssMsg;
     bool                rc = false;
@@ -252,11 +252,12 @@ bool KSCPClient::CheckHostkey()
             break;
     }
 
-    if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH )
-        rc = _kdlg.MessageBox( ssMsg.str(), _strAddress,
-                               check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH ?
-                                   ( MB_YESNO | MB_QUERY ) :
-                                   ( MB_OK | MB_WARNING )) == MBID_YES;
+    if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH &&
+        check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH )
+    {
+        rc = _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_WARNING )
+                == MBID_YES;
+    }
 
     if( rc && check == LIBSSH2_KNOWNHOST_CHECK_NOTFOUND )
     {
@@ -282,6 +283,8 @@ bool KSCPClient::CheckHostkey()
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
             ssMsg << "Failed to add a hostkey :" << endl
                   << errmsg;
+
+            rc = false;
             // go to free knownhost and to display a message
         }
         else
@@ -304,6 +307,8 @@ bool KSCPClient::CheckHostkey()
                 ssMsg << "Failed to write to "
                       << strKnownHostFile << " :" << endl
                       << errmsg;
+
+                rc = false;
                 // go to free knownhost and to display a message
             }
         }
@@ -312,7 +317,7 @@ bool KSCPClient::CheckHostkey()
     libssh2_knownhost_free( nh );
 
 exit_messagebox :
-    if( !rc && check == -1 )
+    if( !rc )
         _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     return rc;
