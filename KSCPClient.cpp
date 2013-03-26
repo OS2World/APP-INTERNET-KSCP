@@ -154,7 +154,7 @@ bool KSCPClient::CheckHostkey()
     const char*         fingerprint;
     size_t              hostkeylen;
     int                 type;
-    int                 check;
+    int                 check = -1;
     char*               errmsg;
     stringstream        ssMsg;
     bool                rc = false;
@@ -312,7 +312,7 @@ bool KSCPClient::CheckHostkey()
     libssh2_knownhost_free( nh );
 
 exit_messagebox :
-    if( !rc )
+    if( !rc && check == -1 )
         _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
     return rc;
@@ -684,7 +684,11 @@ void KSCPClient::ConnectWorker( void* arg )
      * user, that's your call
      */
     if( !CheckHostkey())
+    {
+        ssMsg << "Failed to check a hostkey";
+
         goto exit_session_disconnect;
+    }
 
     kstStatus.SetWindowText("Authenticating...");
     if( psi->iAuth == 0 )
