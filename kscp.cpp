@@ -66,7 +66,7 @@ int KSCP::Run()
     }
 
     KSCPClient kclient;
-    kclient.RegisterClass( _hab, WC_KSCP, CS_SIZEREDRAW, sizeof( PVOID ));
+    kclient.RegisterClass( GetHAB(), WC_KSCP, CS_SIZEREDRAW, sizeof( PVOID ));
 
     ULONG flFrameFlags;
     flFrameFlags = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINMAX | FCF_SIZEBORDER |
