@@ -58,7 +58,7 @@ class KSCPContainer : public KContainer< KSCPRECORD, true >
 {
 protected :
     virtual SHORT KSortCompare( PKSCPRECORD p1, PKSCPRECORD p2,
-                                PVOID pStorage )
+                                PVOID pStorage ) const
     {
         LIBSSH2_SFTP_ATTRIBUTES* pattr1;
         LIBSSH2_SFTP_ATTRIBUTES* pattr2;
