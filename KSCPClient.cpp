@@ -1662,7 +1662,7 @@ MRESULT KSCPClient::CnContextMenu()
                 PU_HCONSTRAIN | PU_VCONSTRAIN;
 
     QueryPointerPos( &ptl );
-    MapWindowPoints( KWND_DESKTOP, this, &ptl, 1 );
+    ::MapWindowPoints( KWND_DESKTOP, this, &ptl, 1 );
 
     _kmenuPopup.PopupMenu( this, this, ptl.x, ptl.y, 0, fs );
 
