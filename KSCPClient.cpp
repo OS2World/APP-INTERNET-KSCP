@@ -255,8 +255,14 @@ bool KSCPClient::CheckHostkey()
     if( check != LIBSSH2_KNOWNHOST_CHECK_MATCH &&
         check != LIBSSH2_KNOWNHOST_CHECK_MISMATCH )
     {
-        rc = _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_WARNING )
+        rc = _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_YESNO | MB_QUERY )
                 == MBID_YES;
+        if( !rc )
+        {
+            libssh2_knownhost_free( nh );
+
+            return rc;
+        }
     }
 
     if( rc && check == LIBSSH2_KNOWNHOST_CHECK_NOTFOUND )
