@@ -41,7 +41,7 @@
 
 #include <os2.h>
 
-#include <KPMLib.h>
+#include "KPMLib.h"
 
 #include "ServerInfoVector.h"
 

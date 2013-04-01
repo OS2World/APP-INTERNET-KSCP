@@ -39,7 +39,7 @@
 #ifndef KWORKER_THREAD_H
 #define KWORKER_THREAD_H
 
-#include <KPMSubThread.h>
+#include "KPMSubThread.h"
 
 #include "KSCPClient.h"
 

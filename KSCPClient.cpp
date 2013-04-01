@@ -54,7 +54,7 @@
 #include <libssh2.h>
 #include <libssh2_sftp.h>
 
-#include <KDirDlg.h>
+#include "KDirDlg.h"
 
 #include "kscp.h"
 

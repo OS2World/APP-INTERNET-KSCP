@@ -41,7 +41,7 @@
 
 #include <string>
 
-#include <KWindow.h>
+#include "KWindow.h"
 
 #define KSCP_PRF_KEY_SHOW   "SHOW"
 

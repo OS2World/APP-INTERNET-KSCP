@@ -41,7 +41,7 @@
 
 #include <sstream>
 
-#include <KPMLib.h>
+#include "KPMLib.h"
 
 #include <libssh2.h>
 

@@ -41,7 +41,7 @@
 
 #include <os2.h>
 
-#include <KContainer.h>
+#include "KContainer.h"
 
 #include <libssh2_sftp.h>
 

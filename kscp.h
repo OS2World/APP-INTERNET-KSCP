@@ -39,7 +39,7 @@
 #ifndef KSCP_H
 #define KSCP_H
 
-#include <KPMApp.h>
+#include "KPMApp.h"
 
 #include "kscprc.h"
 

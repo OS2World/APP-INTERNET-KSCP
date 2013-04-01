@@ -39,7 +39,7 @@
 #define INCL_WIN
 #include <os2.h>
 
-#include <KPMLib.h>
+#include "KPMLib.h"
 
 #include "kscp.h"
 

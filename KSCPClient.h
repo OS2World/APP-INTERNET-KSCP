@@ -45,7 +45,7 @@
 #include <string>
 using namespace std;
 
-#include <KPMLib.h>
+#include "KPMLib.h"
 
 #include "addrbookdlg.h"
 
