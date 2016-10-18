@@ -115,9 +115,9 @@ int KSCPClient::CallWorker( const string& strTitle,
         _kdlg.ProcessDlg();
     }
 
-    _kdlg.DestroyWindow();
-
     thread.WaitThread();
+
+    _kdlg.DestroyWindow();
 
     return _fCanceled ? -1 : _iResult;
 }
