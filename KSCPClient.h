@@ -51,6 +51,26 @@ using namespace std;
 
 #include "KSCPContainer.h"
 
+class KDlDialog : public KDialog
+{
+public :
+    KDlDialog() : KDialog() {}
+    virtual ~KDlDialog() {}
+
+    bool Dismiss( ULONG ulResult )
+    {
+        return SendMsg( WM_COMMAND, MPFROMSHORT( ulResult ),
+                        MPFROM2SHORT( 0xFFFF, FALSE ));
+    }
+
+protected :
+    virtual MRESULT CmdSrcUser( USHORT usCmd, USHORT /* usSource == 0xFFFF */,
+                                bool fPointer )
+    {
+        return MRFROMLONG( DismissDlg( usCmd ));
+    }
+};
+
 class KSCPClient : public KWindow
 {
 public :
@@ -81,7 +101,7 @@ private :
     HMODULE             _hmodPMWP;
     HPOINTER            _hptrDefaultFile;
     HPOINTER            _hptrDefaultFolder;
-    KDialog             _kdlg;
+    KDlDialog           _kdlg;
     KFileDlg            _kfd;
     LIBSSH2_SESSION*    _session;
     LIBSSH2_SFTP*       _sftp_session;

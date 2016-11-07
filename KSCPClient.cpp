@@ -542,7 +542,7 @@ exit_closedir :
 
 exit_dismiss :
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 }
 
 bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
@@ -765,7 +765,7 @@ void KSCPClient::ConnectWorker( void* arg )
     /* Tell libssh2 to wait up to MAX_WAIT_TIME for blocking functions */
     libssh2_session_set_timeout( _session, MAX_WAIT_TIME );
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _iResult = 0;
 
@@ -787,7 +787,7 @@ exit_close_socket :
 
     _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _iResult = 1;
 }
@@ -1245,7 +1245,7 @@ void KSCPClient::RemoteWorker( void* arg )
         ( this->*rp->pCallback )( pkr );
     }
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _fBusy = false;
 }
@@ -1471,7 +1471,7 @@ void KSCPClient::LocalWorker( void* arg )
         (this->*lp->pCallback)( vsList[ i ]);
     }
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _fBusy = false;
 }
