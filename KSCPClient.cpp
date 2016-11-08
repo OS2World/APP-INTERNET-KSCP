@@ -77,7 +77,7 @@ int KSCPClient::CallWorker( const string& strTitle,
     _fCanceled = false;
 
     _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
+    _kdlg.MoveToCenter();
     _kdlg.SetWindowText( strTitle );
     _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, "");
     _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, "");
@@ -344,7 +344,7 @@ void KSCPClient::ReadDirWorker( void* arg )
     KStaticText kstStatus;
 
     _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
-    kstStatus.Centering();
+    kstStatus.MoveToCenter();
     kstStatus.SetWindowText("Reading directory...");
 
     cerr << "libssh2_sftp_opendir()!" << endl;
@@ -631,7 +631,7 @@ void KSCPClient::ConnectWorker( void* arg )
     KStaticText kstStatus;
 
     _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
-    kstStatus.Centering();
+    kstStatus.MoveToCenter();
 
     _strAddress = psi->strAddress;
     _strCurDir  = psi->strDir;
