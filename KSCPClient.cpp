@@ -62,6 +62,8 @@
 
 #include "KSCPClient.h"
 
+using namespace std;
+
 #define IDC_CONTAINER   1
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"

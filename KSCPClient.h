@@ -43,7 +43,6 @@
 #include <os2.h>
 
 #include <string>
-using namespace std;
 
 #include "KPMLib.h"
 
@@ -105,11 +104,11 @@ private :
     KFileDlg            _kfd;
     LIBSSH2_SESSION*    _session;
     LIBSSH2_SFTP*       _sftp_session;
-    string              _strCurDir;
-    string              _strDlDir;
+    std::string         _strCurDir;
+    std::string         _strDlDir;
     bool                _fBusy;
     bool                _fCanceled;
-    string              _strAddress;
+    std::string         _strAddress;
     bool                _fCnrEditing;
     int                 _iResult;
 
@@ -122,13 +121,14 @@ private :
         void*       arg;
     };
 
-    int  CallWorker( const string& strTitle, PFN_WORKER pfnWorker,
+    int  CallWorker( const std::string& strTitle, PFN_WORKER pfnWorker,
                      void* arg = 0 );
 
-    void QuerySSHHome( string& strHome );
+    void QuerySSHHome( std::string& strHome );
     bool CheckHostkey();
     void ReadDirWorker( void* arg );
-    bool ReadDir( const string& strDir, const string& strSelected = "" );
+    bool ReadDir( const std::string& strDir,
+                  const std::string& strSelected = "" );
     int  ConnectEx( u_long to_addr, int port, int timeout );
     void ConnectWorker( void* arg );
     bool Connect( PSERVERINFO psi );
@@ -157,7 +157,7 @@ private :
 
     void RemoteWorker( void* arg );
 
-    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const string& );
+    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const std::string& );
 
     struct LocalParam
     {
@@ -169,7 +169,7 @@ private :
     int Download( PKSCPRECORD pkr );
     int KSCPDownload();
 
-    int Upload( const string& strName );
+    int Upload( const std::string& strName );
     int KSCPUpload();
 
     int Delete( PKSCPRECORD pkr );

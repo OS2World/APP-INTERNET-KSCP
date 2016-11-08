@@ -45,6 +45,8 @@
 
 #include "ServerInfoVector.h"
 
+using namespace std;
+
 #define KSCP_PRF_KEY_SERVER_COUNT "SERVER_COUNT"
 #define KSCP_PRF_KEY_SERVER_BASE  "SERVER"
 

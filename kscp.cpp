@@ -49,6 +49,8 @@
 
 #include "kscp.h"
 
+using namespace std;
+
 int KSCP::Run()
 {
     int   rc;

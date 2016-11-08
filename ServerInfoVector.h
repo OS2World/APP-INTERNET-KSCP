@@ -40,7 +40,6 @@
 #define SERVER_INFO_VECTOR_H
 
 #include <vector>
-using namespace std;
 
 #include "addrbookdlg.h"
 
@@ -85,6 +84,6 @@ public :
     }
 
 private :
-    vector< PSERVERINFO > _vtServerInfo;
+    std::vector< PSERVERINFO > _vtServerInfo;
 };
 #endif

@@ -52,10 +52,10 @@
 
 typedef struct _SERVERINFO
 {
-    string strAddress;
-    string strUserName;
-    string strPassword;
-    string strDir;
+    std::string strAddress;
+    std::string strUserName;
+    std::string strPassword;
+    std::string strDir;
     int    iAuth;
 } SERVERINFO, *PSERVERINFO;
 
