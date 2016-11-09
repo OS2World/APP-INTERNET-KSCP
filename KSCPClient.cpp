@@ -568,7 +568,7 @@ int KSCPClient::ConnectEx( u_long to_addr, int port, int timeout )
     struct sockaddr_in sin;
     fd_set rset, wset;
     struct timeval tv;
-    int    rc;
+    int    rc = 0;
 
     flags = fcntl( _sock, F_GETFL );
     fcntl( _sock, F_SETFL, flags | O_NONBLOCK );
@@ -586,10 +586,7 @@ int KSCPClient::ConnectEx( u_long to_addr, int port, int timeout )
         }
     }
     else
-    {
-        rc = 0;
         goto exit_set_fl;
-    }
 
     /* Support positive timeout only */
     for(; !_fCanceled && timeout > 0 ; timeout -= 100 )
