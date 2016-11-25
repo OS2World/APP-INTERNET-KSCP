@@ -45,6 +45,7 @@
 #include <ctime>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1060,7 +1061,9 @@ void KSCPClient::Refresh()
     ReadDir( _strCurDir );
 }
 
-#define BUF_SIZE    ( 1024 * 4 )
+#define BUF_MIN_SIZE ( 1024 * 4 /* 4KB */ )
+#define BUF_MAX_SIZE ( 1024 * 1024 * 8 /* 8MB */ )
+#define TIME_LIMIT   ( 2 * 1000000LL /* 2s */ )
 
 int KSCPClient::Download( PKSCPRECORD pkr )
 {
@@ -1071,7 +1074,6 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     struct stat       statbuf;
     FILE*             fp;
     string            strPath;
-    char*             buf;
     libssh2_uint64_t  size;
     stringstream      ssMsg;
     char*             errmsg;
@@ -1128,13 +1130,13 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         goto exit_sftp_close;
     }
 
-    buf = new char[ BUF_SIZE ];
-
     if( pattr->filesize )
     {
+        vector< char > buf( BUF_MIN_SIZE );
+        long long elapsedTime = 0;
         int nRead, nWrite;
 
-        for( size = diffTime = 0; !_fCanceled; )
+        for( size = 0; !_fCanceled; )
         {
             ssMsg.str("");
             ssMsg << size / 1024 << " KB of "
@@ -1145,11 +1147,13 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
             gettimeofday( &tv1, NULL );
             /* read in a loop until we block */
-            nRead = libssh2_sftp_read( sftp_handle, buf, BUF_SIZE );
+            nRead = libssh2_sftp_read( sftp_handle, &buf[ 0 ], buf.capacity());
             gettimeofday( &tv2, NULL );
 
-            diffTime += ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
-                        ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+            diffTime = ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
+                       ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+
+            elapsedTime += diffTime;
 
             if( nRead == 0 )
                 break;
@@ -1162,10 +1166,10 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                       << " : " << endl
                       << errmsg;
 
-                goto exit_delete;
+                goto exit_fclose;
             }
 
-            nWrite = fwrite( buf, 1, nRead, fp );
+            nWrite = fwrite( &buf[ 0 ], 1, nRead, fp );
             if( nWrite < nRead )
             {
                 ssMsg.str("");
@@ -1173,19 +1177,27 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                       << " : " << endl
                       << strerror( errno );
 
-                goto exit_delete;
+                goto exit_fclose;
             }
 
             size += nWrite;
 
-            if( diffTime )
+            if( elapsedTime )
             {
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
+                ssMsg << ( size * 1000000LL / 1024 ) / elapsedTime
                       << " KB/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
                                       ssMsg.str());
             }
+
+            // resize buffer according to the network speed
+            if( diffTime > TIME_LIMIT &&
+                buf.capacity() > BUF_MIN_SIZE )         // slow ?
+                buf.resize( buf.capacity() * 3 / 4 );   // then, decrease
+            else if( diffTime == 0 &&
+                     buf.capacity() < BUF_MAX_SIZE )    // fast ?
+                buf.resize( buf.capacity() * 3 / 2 );   // then, increase
         }
 
         if( size != pattr->filesize )
@@ -1194,15 +1206,13 @@ int KSCPClient::Download( PKSCPRECORD pkr )
             ssMsg << "Ooops... Error occurs while downloading :" << endl
                   << strSFTPPath;
 
-            goto exit_delete;
+            goto exit_fclose;
         }
     }
 
     rc = 0;
 
-exit_delete:
-    delete[] buf;
-
+exit_fclose:
     fclose( fp );
 
 exit_sftp_close :
@@ -1288,7 +1298,6 @@ int KSCPClient::Upload( const string& strName )
 
     FILE*        fp;
     off_t        size, fileSize;
-    char*        buf;
     stringstream ssMsg;
     char*        errmsg;
 
@@ -1357,14 +1366,14 @@ int KSCPClient::Upload( const string& strName )
         goto exit_fclose;
     }
 
-    buf = new char[ BUF_SIZE ];
-
     if( fileSize )
     {
+        vector< char > buf( BUF_MIN_SIZE );
+        long long   elapsedTime = 0;
         int         nRead, nWrite;
         const char* ptr;
 
-        for( size = diffTime = 0; !_fCanceled; )
+        for( size = 0; !_fCanceled; )
         {
             ssMsg.str("");
             ssMsg << size / 1024 << " KB of "
@@ -1373,28 +1382,26 @@ int KSCPClient::Upload( const string& strName )
 
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
-            nRead = fread( buf, 1, BUF_SIZE, fp );
+            nRead = fread( &buf[ 0 ], 1, buf.capacity(), fp );
             if( nRead == 0 && feof( fp ))
                 break;
-            else if( nRead < BUF_SIZE && ferror( fp ))
+            else if( nRead < static_cast< int >( buf.capacity()) &&
+                     ferror( fp ))
             {
                 ssMsg.str("");
                 ssMsg << "Cannot read data from " << strName
                       << " :" << endl
                       << strerror( errno );
 
-                goto exit_delete;
+                goto exit_close;
             }
 
-            for( ptr = buf; nRead; )
+            gettimeofday( &tv1, NULL );
+
+            for( ptr = &buf[ 0 ]; nRead; )
             {
-                gettimeofday( &tv1, NULL );
                 /* write data in a loop until we block */
                 nWrite = libssh2_sftp_write( sftp_handle, ptr, nRead );
-                gettimeofday( &tv2, NULL );
-
-                diffTime += ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
-                            ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
 
                 if( nWrite < 0 )
                 {
@@ -1405,7 +1412,7 @@ int KSCPClient::Upload( const string& strName )
                           << " :" << endl
                           << errmsg;
 
-                    goto exit_delete;
+                    goto exit_close;
                 }
 
                 ptr   += nWrite;
@@ -1413,13 +1420,28 @@ int KSCPClient::Upload( const string& strName )
                 size  += nWrite;
             }
 
-            if( diffTime )
+            gettimeofday( &tv2, NULL );
+
+            diffTime = ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
+                       ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+
+            elapsedTime += diffTime;
+
+            if( elapsedTime )
             {
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
+                ssMsg << ( size * 1000000LL / 1024 ) / elapsedTime
                       << " KB/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, ssMsg.str());
             }
+
+            // resize buffer according to the network speed
+            if( diffTime > TIME_LIMIT &&
+                buf.capacity() > BUF_MIN_SIZE )         // slow ?
+                buf.resize( buf.capacity() * 3 / 4 );   // then, decrease
+            else if( diffTime == 0 &&
+                     buf.capacity() < BUF_MAX_SIZE )    // fast ?
+                buf.resize( buf.capacity() * 3 / 2 );   // then, increase
         }
 
         if( size != fileSize )
@@ -1428,15 +1450,13 @@ int KSCPClient::Upload( const string& strName )
             ssMsg << "Ooops... Error occurs while uploading :" << endl
                   << strName;
 
-            goto exit_delete;
+            goto exit_close;
         }
     }
 
     rc = 0;
 
-exit_delete :
-    delete[] buf;
-
+exit_close :
     libssh2_sftp_close( sftp_handle );
 
 exit_fclose :
