@@ -69,6 +69,47 @@ using namespace std;
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"
 
+class KSizeUnit
+{
+public:
+    KSizeUnit( long long size )
+    {
+        setSize( size );
+    }
+
+    void setSize( long long size )
+    {
+        vector< string > vtUnits;
+
+        vtUnits.push_back("TB");
+        vtUnits.push_back("GB");
+        vtUnits.push_back("MB");
+        vtUnits.push_back("KB");
+        vtUnits.push_back("B");
+
+        double dSize;
+        unsigned uUnit = vtUnits.size() - 1;
+
+        for( dSize = size; dSize >= 1024.0; dSize /= 1024.0 )
+        {
+            if( uUnit == 0 )
+                break;
+
+            --uUnit;
+        }
+
+        _dSize = dSize;
+        _strUnit = vtUnits[ uUnit ];
+    }
+
+    double size() const { return _dSize; }
+    string unit() const { return _strUnit; }
+
+private:
+    double _dSize;
+    string _strUnit;
+};
+
 /**
  * Return : < 0 on cancel
  *            0 on success
@@ -423,27 +464,12 @@ void KSCPClient::ReadDirWorker( void* arg )
             if( hptrIcon != _hptrDefaultFolder &&
                 attrs.flags & LIBSSH2_SFTP_ATTR_SIZE )
             {
-                static const char* pszUnit[] = {"B", "KB", "MB", "GB", "TB"};
-
-                unsigned usUnit = 0;
-                double   dSize = attrs.filesize;
-
-                for( usUnit = 0;
-                     usUnit < sizeof( pszUnit ) / sizeof( pszUnit[ 0 ]) - 1; )
-                {
-                    if( dSize > 1024.0 )
-                    {
-                        dSize /= 1024.0;
-                        usUnit++;
-                    }
-                    else
-                        break;
-                }
+                KSizeUnit ksz( attrs.filesize );
 
                 stringstream ss;
 
-                ss.precision( usUnit == 0 ? 0 : 2 );
-                ss << fixed << dSize << " " << pszUnit [ usUnit ];
+                ss.precision( ksz.unit().length() == 1 /* B */ ? 0 : 1 );
+                ss << fixed << ksz.size() << " " << ksz.unit();
                 pkr->pszSize = strdup( ss.str().c_str());
             }
 
@@ -1138,9 +1164,16 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
         for( size = 0; !_fCanceled; )
         {
+            KSizeUnit ksz( size );
+
             ssMsg.str("");
-            ssMsg << size / 1024 << " KB of "
-                  << pattr->filesize / 1024 << " KB ("
+
+            ssMsg.precision( 1 );
+            ssMsg << fixed
+                  << ksz.size() << " " << ksz.unit() << " of ";
+
+            ksz.setSize( pattr->filesize );
+            ssMsg << ksz.size() << " " << ksz.unit() << " ("
                   << size * 100 / pattr->filesize << "%)";
 
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
@@ -1184,9 +1217,12 @@ int KSCPClient::Download( PKSCPRECORD pkr )
 
             if( elapsedTime )
             {
+                KSizeUnit ksz( size * 1000000LL / elapsedTime );
+
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / elapsedTime
-                      << " KB/s";
+
+                ssMsg.precision( 1 );
+                ssMsg << fixed << ksz.size() << " " << ksz.unit() << "/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
                                       ssMsg.str());
             }
@@ -1375,9 +1411,16 @@ int KSCPClient::Upload( const string& strName )
 
         for( size = 0; !_fCanceled; )
         {
+            KSizeUnit ksz( size );
+
             ssMsg.str("");
-            ssMsg << size / 1024 << " KB of "
-                  << fileSize / 1024 << " KB ("
+
+            ssMsg.precision( 1 );
+            ssMsg << fixed
+                  << ksz.size() << " " << ksz.unit() << " of ";
+
+            ksz.setSize( fileSize );
+            ssMsg << ksz.size() << " " << ksz.unit() << " ("
                   << size * 100 / fileSize << "%)";
 
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
@@ -1429,9 +1472,12 @@ int KSCPClient::Upload( const string& strName )
 
             if( elapsedTime )
             {
+                KSizeUnit ksz( size * 1000000LL / elapsedTime );
+
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / elapsedTime
-                      << " KB/s";
+
+                ssMsg.precision( 1 );
+                ssMsg << fixed << ksz.size() << " " << ksz.unit() << "/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, ssMsg.str());
             }
 
