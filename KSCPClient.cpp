@@ -110,6 +110,35 @@ private:
     string _strUnit;
 };
 
+KSCPClient::KSCPClient()
+{
+    ULONG        ulBootDrive;
+
+    DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                     &ulBootDrive, sizeof( ulBootDrive ));
+
+    string strDir;
+
+    strDir = static_cast< char >( ulBootDrive + 'A' - 1 );
+    strDir += ":/OS2/.ssh";
+
+    // OS2 directory on a boot drive
+    _vtstrSSHDir.push_back( strDir );
+
+    const char* pszHome = getenv("HOME");
+    if( pszHome )
+    {
+        strDir = pszHome;
+        strDir += "/.ssh";
+
+        // HOME directory
+        _vtstrSSHDir.push_back( strDir );
+    }
+
+    // Current directory
+    _vtstrSSHDir.push_back("./.ssh");
+}
+
 /**
  * Return : < 0 on cancel
  *            0 on success
@@ -166,26 +195,41 @@ int KSCPClient::CallWorker( const string& strTitle,
     return _fCanceled ? -1 : _iResult;
 }
 
-void KSCPClient::QuerySSHHome( string& strHome )
+string KSCPClient::QuerySSHHome()
 {
-    ULONG        ulBootDrive;
-
-    DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
-                     &ulBootDrive, sizeof( ulBootDrive ));
-
-    strHome  = static_cast< char >( ulBootDrive + 'A' - 1 );
-    strHome += ":/os2/.ssh";
-
     struct stat statbuf;
-    if( stat( strHome.c_str(), &statbuf ) || !S_ISDIR( statbuf.st_mode ))
-    {
-        const char* pszHome = getenv("HOME");
-        if( !pszHome )
-            pszHome = ".";
 
-        strHome  = pszHome;
-        strHome += "/.ssh";
+    for( vector< string >::const_iterator it = _vtstrSSHDir.begin();
+         it != _vtstrSSHDir.end(); ++it )
+    {
+        // Check the existence of a directory
+        if( stat(( *it ).c_str(), &statbuf ) == 0 &&
+            S_ISDIR( statbuf.st_mode ))
+            return *it;
     }
+
+    // Use first directory, which is x:/OS2/.ssh, as a fall back like ssh.exe
+    // of OpenSSH does for root
+    return _vtstrSSHDir.front();
+}
+
+string KSCPClient::QuerySSHFilePath( const string &strName )
+{
+    struct stat statbuf;
+
+    for( vector< string >::const_iterator it = _vtstrSSHDir.begin();
+         it != _vtstrSSHDir.end(); ++it )
+    {
+        string strPath( *it + "/" + strName );
+
+        // Check if an existent regular file
+        if( stat( strPath.c_str(), &statbuf ) == 0 &&
+            S_ISREG( statbuf.st_mode ))
+            return strPath;
+    }
+
+    // fall back
+    return QuerySSHHome() + "/" + strName;
 }
 
 bool KSCPClient::CheckHostkey()
@@ -225,9 +269,9 @@ bool KSCPClient::CheckHostkey()
         goto exit_messagebox;
     }
 
-    QuerySSHHome( strKnownHostFile );
+    strKnownHostFile = QuerySSHFilePath("known_hosts");
+    cerr << "known_hosts file : " << strKnownHostFile << "\n";
 
-    strKnownHostFile += "/known_hosts";
     hostcount = libssh2_knownhost_readfile( nh, strKnownHostFile.c_str(),
                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH );
 
@@ -743,25 +787,20 @@ void KSCPClient::ConnectWorker( void* arg )
     }
     else
     {
-        string strHome;
+        // Public key and private key may be located in different directories
+        string strPublicKey( QuerySSHFilePath( psi->iAuth == 1 ?
+                                               "id_rsa.pub" : "id_dsa.pub"));
+        string strPrivateKey( QuerySSHFilePath( psi->iAuth == 1 ?
+                                                "id_rsa" : "id_dsa"));
 
-        QuerySSHHome( strHome );
-
-        stringstream ssPublicKey;
-        stringstream ssPrivateKey;
-
-        ssPublicKey << strHome << "/id_"
-                    << ( psi->iAuth == 1 ? "rsa" : "dsa")
-                    << ".pub";
-
-        ssPrivateKey << strHome << "/id_"
-                     << ( psi->iAuth == 1 ? "rsa" : "dsa" );
+        cerr << "Public key file : " << strPublicKey << "\n";
+        cerr << "Private key file : " << strPrivateKey << "\n";
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,
                             psi->strUserName.c_str(),
-                            ssPublicKey.str().c_str(),
-                            ssPrivateKey.str().c_str(),
+                            strPublicKey.c_str(),
+                            strPrivateKey.c_str(),
                             psi->strPassword.c_str() ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );

@@ -73,7 +73,7 @@ protected :
 class KSCPClient : public KWindow
 {
 public :
-    KSCPClient() : KWindow() {}
+    KSCPClient();
     virtual ~KSCPClient() {}
 
 protected :
@@ -111,6 +111,7 @@ private :
     std::string         _strAddress;
     bool                _fCnrEditing;
     int                 _iResult;
+    std::vector< std::string > _vtstrSSHDir;
 
     typedef void ( KSCPClient::*PFN_WORKER )( void* arg );
 
@@ -124,7 +125,9 @@ private :
     int  CallWorker( const std::string& strTitle, PFN_WORKER pfnWorker,
                      void* arg = 0 );
 
-    void QuerySSHHome( std::string& strHome );
+    std::string QuerySSHHome();
+    std::string QuerySSHFilePath( const std::string& strName );
+
     bool CheckHostkey();
     void ReadDirWorker( void* arg );
     bool ReadDir( const std::string& strDir,
