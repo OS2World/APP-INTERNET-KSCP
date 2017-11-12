@@ -1,4 +1,4 @@
-                                 KSCP v0.4.0
+                                 KSCP v0.5.0
                                 -------------
                             
 1. 소개
@@ -15,18 +15,18 @@
   
   - OS/2 ToolKit v4.5
   
-  - GNU Make v3.81r3
+  - GNU Make v3.81-k2
   
-  - rm v3.13
+  - coreutils v8.26
   
-  - lxlite v1.3.3
+  - lxlite v1.3.5 shl
   
-  - git v1.7.3.2 
+  - git v2.13.3
       
 3. 실행에 필요한 환경
 ---------------------
 
-  - 런타임 : kLIBC v0.6.5, OpenSSL v0.9.8r OS2-KNIX
+  - 런타임 : kLIBC v0.6.6, OpenSSL v1.0.0t OS2-KNIX
 
 4. 시험 환경
 ------------
@@ -91,7 +91,12 @@
 -------------------
 
   선택한 파일 또는 디렉토리의 이름을 바꿉니다.
-      
+
+6.6.5 팝업 - Refresh
+--------------------
+
+  현재 디렉토리의 내용을 다시 읽습니다.
+        
 7. 제한 사항 또는 알려진 벌레
 -----------------------------
 
@@ -106,11 +111,17 @@
   
   - 드래그 & 드랍 지원
   
-  - 네트워크 작업을 할 때 시스템 반응 개선
-  
 9. 판번호 보기
 --------------
 
+  - v0.5.0 ( 2017/11/12 )
+    .Refresh 기능 지원
+    .업로드/다운로드할 때 대화상자 사라지고 나서 마우스 작동 안 함. 고침.
+    .SSH 파일을 찾지 못하는 경우가 있음. 고침.
+    .연결에 시간이 오래 걸릴 때, 시스템 반응 개선
+    .사용자 상호작용 개선
+    .업로드/다운로드 속도 개선
+    
   - v0.4.0 ( 2013/02/28 )
     .공개키 인증 지원( RSA, DSS )
     .DEL 글쇠에 삭제 기능 할당
@@ -148,13 +159,13 @@
   
   - OS/2 ToolKit v4.5
   
-  - GNU Make v3.81r3
+  - GNU Make v3.81-k2
   
-  - libssh2 v1.4.0
+  - libssh2 v1.8.0
   
-  - OpenSSL v0.9.8r OS2-KNIX
+  - OpenSSL v1.0.0.t OS2-KNIX
   
-  - zlib v1.2.3
+  - zlib v1.2.11
   
 10.2 컴파일 하기
 ----------------
@@ -184,15 +195,12 @@
 
   이 프로그램이 마음에 들어 후원하고 싶으시면, 아래 URL 을 방문해 주십시오.
 
-    http://www.ecomstation.co.kr/komh/donate.html
+    http://www.os2.kr/komh/os2factory/
 
 
 13. 하고 싶은 말이 있을 때...
 -----------------------------
 
-  e-mail : komh@chollian.net
-  ICQ    : 124861818
-  MSN    : komh@chollian.net
-  IRC    : lvzuufx, #os2 at HANIRC(irc.hanirc.org)
+  https://github.com/komh/kscp/issues
                
 고명훈
