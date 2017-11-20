@@ -26,7 +26,10 @@
 3. 실행에 필요한 환경
 ---------------------
 
-  - 런타임 : kLIBC v0.6.6, OpenSSL v1.0.0t OS2-KNIX
+  - 런타임
+    .kLIBC v0.6.6
+    .OpenSSL v1.0.0t OS2-KNIX
+     (http://bauxite.sakura.ne.jp/software/os2/#openssl)
 
 4. 시험 환경
 ------------

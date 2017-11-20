@@ -26,7 +26,10 @@
 3. Requirements
 ---------------
 
-  - Runtime : kLIBC v0.6.6, OpenSSL v1.0.0t OS2-KNIX
+  - Runtime
+    .kLIBC v0.6.6
+    .OpenSSL v1.0.0t OS2-KNIX
+     (http://bauxite.sakura.ne.jp/software/os2/#openssl)
 
 4. Test Environment
 --------------------
