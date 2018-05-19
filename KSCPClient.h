@@ -43,7 +43,6 @@
 #include <os2.h>
 
 #include <string>
-using namespace std;
 
 #include "KPMLib.h"
 
@@ -51,10 +50,30 @@ using namespace std;
 
 #include "KSCPContainer.h"
 
+class KDlDialog : public KDialog
+{
+public :
+    KDlDialog() : KDialog() {}
+    virtual ~KDlDialog() {}
+
+    bool Dismiss( ULONG ulResult )
+    {
+        return SendMsg( WM_COMMAND, MPFROMSHORT( ulResult ),
+                        MPFROM2SHORT( 0xFFFF, FALSE ));
+    }
+
+protected :
+    virtual MRESULT CmdSrcUser( USHORT usCmd, USHORT /* usSource == 0xFFFF */,
+                                bool fPointer )
+    {
+        return MRFROMLONG( DismissDlg( usCmd ));
+    }
+};
+
 class KSCPClient : public KWindow
 {
 public :
-    KSCPClient() : KWindow() {}
+    KSCPClient();
     virtual ~KSCPClient() {}
 
 protected :
@@ -81,17 +100,18 @@ private :
     HMODULE             _hmodPMWP;
     HPOINTER            _hptrDefaultFile;
     HPOINTER            _hptrDefaultFolder;
-    KDialog             _kdlg;
+    KDlDialog           _kdlg;
     KFileDlg            _kfd;
     LIBSSH2_SESSION*    _session;
     LIBSSH2_SFTP*       _sftp_session;
-    string              _strCurDir;
-    string              _strDlDir;
+    std::string         _strCurDir;
+    std::string         _strDlDir;
     bool                _fBusy;
     bool                _fCanceled;
-    string              _strAddress;
+    std::string         _strAddress;
     bool                _fCnrEditing;
     int                 _iResult;
+    std::vector< std::string > _vtstrSSHDir;
 
     typedef void ( KSCPClient::*PFN_WORKER )( void* arg );
 
@@ -102,13 +122,16 @@ private :
         void*       arg;
     };
 
-    int  CallWorker( const string& strTitle, PFN_WORKER pfnWorker,
+    int  CallWorker( const std::string& strTitle, PFN_WORKER pfnWorker,
                      void* arg = 0 );
 
-    void QuerySSHHome( string& strHome );
+    std::string QuerySSHHome();
+    std::string QuerySSHFilePath( const std::string& strName );
+
     bool CheckHostkey();
     void ReadDirWorker( void* arg );
-    bool ReadDir( const string& strDir, const string& strSelected = "" );
+    bool ReadDir( const std::string& strDir,
+                  const std::string& strSelected = "" );
     int  ConnectEx( u_long to_addr, int port, int timeout );
     void ConnectWorker( void* arg );
     bool Connect( PSERVERINFO psi );
@@ -137,7 +160,7 @@ private :
 
     void RemoteWorker( void* arg );
 
-    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const string& );
+    typedef int (KSCPClient::*PFN_LOCAL_CALLBACK )( const std::string& );
 
     struct LocalParam
     {
@@ -149,7 +172,7 @@ private :
     int Download( PKSCPRECORD pkr );
     int KSCPDownload();
 
-    int Upload( const string& strName );
+    int Upload( const std::string& strName );
     int KSCPUpload();
 
     int Delete( PKSCPRECORD pkr );

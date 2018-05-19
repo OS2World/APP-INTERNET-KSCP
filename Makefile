@@ -110,7 +110,7 @@ $(PROGRAM).exe : $($(PROGRAM)_DEPS)
 	$(QUIET)$(STRIP) $@
 
 kpmlib :
-	$(MAKE) -C KPMLib lib RELEASE=$(RELEASE)
+	$(MAKE) -C KPMLib KPMLib RELEASE=$(RELEASE)
 
 clean :
 	$(RM) *.bak

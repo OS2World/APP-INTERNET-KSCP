@@ -1,4 +1,4 @@
-                                 KSCP v0.4.0
+                                 KSCP v0.5.0
                                 -------------
                             
 1. Introduction
@@ -15,18 +15,21 @@
   
   - OS/2 ToolKit v4.5
   
-  - GNU Make v3.81r3
+  - GNU Make v3.81-k2
   
-  - rm v3.13
+  - coreutils v8.26
   
-  - lxlite v1.3.3
+  - lxlite v1.3.5 shl
   
-  - git v1.7.3.2 
+  - git v2.13.3
       
 3. Requirements
 ---------------
 
-  - Runtime : kLIBC v0.6.5, OpenSSL v0.9.8r OS2-KNIX
+  - Runtime
+    .kLIBC v0.6.6
+    .OpenSSL v1.0.0t OS2-KNIX
+     (http://bauxite.sakura.ne.jp/software/os2/#openssl)
 
 4. Test Environment
 --------------------
@@ -91,7 +94,12 @@ eComStation 2.1.
 --------------------
 
   Rename a selected file or directory.
-    
+
+6.6.5 Popup - Refresh
+---------------------
+
+  Refresh the contents of the current directory.
+  
 7. Limitations/Known bugs
 -----------------------------
 
@@ -107,11 +115,17 @@ eComStation 2.1.
     
   - Support Drag & Drop
   
-  - Improve a system response on processing a network task
-
 9. History
 ----------
 
+  - v0.5.0 ( 2017/11/12 )
+    .Support 'Refresh' feature
+    .Mouse does not work after Upload/Download dialog dismissed. Fixed.
+    .Fail to find SSH files in some cases. Fixed.
+    .Improved system response while connecting
+    .Improved many user interactions
+    .Improved Upload/Download speed
+    
   - v0.4.0 ( 2013/02/28 )
     .Support publickey authentication( RSA, DSS )
     .Assign 'Delete' feature to 'DEL' key
@@ -149,13 +163,13 @@ eComStation 2.1.
   
   - OS/2 ToolKit v4.5
   
-  - GNU Make v3.81r3
+  - GNU Make v3.81-k2
   
-  - libssh2 v1.4.0
+  - libssh2 v1.8.0
   
-  - OpenSSL v0.9.8r OS2-KNIX
+  - OpenSSL v1.0.0t OS2-KNIX
   
-  - zlib v1.2.3
+  - zlib v1.2.11
   
 10.2 How to compile
 -------------------
@@ -186,14 +200,11 @@ eComStation 2.1.
   If you are satisfied with this program and want to donate to me, please visit
 the following URL.
 
-    http://www.ecomstation.co.kr/komh/donate.html
+    http://www.os2.kr/komh/os2factory/
 
 13. Contacts
 ------------
 
-  e-mail : komh@chollian.net
-  ICQ    : 124861818
-  MSN    : komh@chollian.net
-  IRC    : lvzuufx, #os2 at HANIRC(irc.hanirc.org)
-               
+  https://github.com/komh/kscp/issues
+
 KO Myung-Hun

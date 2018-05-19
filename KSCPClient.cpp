@@ -45,6 +45,7 @@
 #include <ctime>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -62,9 +63,81 @@
 
 #include "KSCPClient.h"
 
+using namespace std;
+
 #define IDC_CONTAINER   1
 
 #define KSCP_PRF_KEY_DLDIR  "DownloadDir"
+
+class KSizeUnit
+{
+public:
+    KSizeUnit( long long size )
+    {
+        setSize( size );
+    }
+
+    void setSize( long long size )
+    {
+        vector< string > vtUnits;
+
+        vtUnits.push_back("TB");
+        vtUnits.push_back("GB");
+        vtUnits.push_back("MB");
+        vtUnits.push_back("KB");
+        vtUnits.push_back("B");
+
+        double dSize;
+        unsigned uUnit = vtUnits.size() - 1;
+
+        for( dSize = size; dSize >= 1024.0; dSize /= 1024.0 )
+        {
+            if( uUnit == 0 )
+                break;
+
+            --uUnit;
+        }
+
+        _dSize = dSize;
+        _strUnit = vtUnits[ uUnit ];
+    }
+
+    double size() const { return _dSize; }
+    string unit() const { return _strUnit; }
+
+private:
+    double _dSize;
+    string _strUnit;
+};
+
+KSCPClient::KSCPClient()
+{
+    ULONG        ulBootDrive;
+
+    DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                     &ulBootDrive, sizeof( ulBootDrive ));
+
+    string strDir;
+
+    strDir = static_cast< char >( ulBootDrive + 'A' - 1 );
+    strDir += ":/OS2/.ssh";
+
+    // OS2 directory on a boot drive
+    _vtstrSSHDir.push_back( strDir );
+
+    const char* pszHome = getenv("HOME");
+    if( pszHome )
+    {
+        strDir = pszHome;
+        strDir += "/.ssh";
+
+        // HOME directory
+        _vtstrSSHDir.push_back( strDir );
+    }
+
+    // Current directory
+    _vtstrSSHDir.push_back("./.ssh");
+}
 
 /**
  * Return : < 0 on cancel
@@ -77,7 +150,7 @@ int KSCPClient::CallWorker( const string& strTitle,
     _fCanceled = false;
 
     _kdlg.LoadDlg( KWND_DESKTOP, this, 0, IDD_DOWNLOAD );
-    _kdlg.Centering();
+    _kdlg.MoveToCenter();
     _kdlg.SetWindowText( strTitle );
     _kdlg.SetDlgItemText( IDT_DOWNLOAD_INDEX, "");
     _kdlg.SetDlgItemText( IDT_DOWNLOAD_FILENAME, "");
@@ -115,33 +188,48 @@ int KSCPClient::CallWorker( const string& strTitle,
         _kdlg.ProcessDlg();
     }
 
-    _kdlg.DestroyWindow();
-
     thread.WaitThread();
+
+    _kdlg.DestroyWindow();
 
     return _fCanceled ? -1 : _iResult;
 }
 
-void KSCPClient::QuerySSHHome( string& strHome )
+string KSCPClient::QuerySSHHome()
 {
-    ULONG        ulBootDrive;
-
-    DosQuerySysInfo( QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
-                     &ulBootDrive, sizeof( ulBootDrive ));
-
-    strHome  = static_cast< char >( ulBootDrive + 'A' - 1 );
-    strHome += ":/os2/.ssh";
-
     struct stat statbuf;
-    if( stat( strHome.c_str(), &statbuf ) || !S_ISDIR( statbuf.st_mode ))
-    {
-        const char* pszHome = getenv("HOME");
-        if( !pszHome )
-            pszHome = ".";
 
-        strHome  = pszHome;
-        strHome += "/.ssh";
+    for( vector< string >::const_iterator it = _vtstrSSHDir.begin();
+         it != _vtstrSSHDir.end(); ++it )
+    {
+        // Check the existence of a directory
+        if( stat(( *it ).c_str(), &statbuf ) == 0 &&
+            S_ISDIR( statbuf.st_mode ))
+            return *it;
     }
+
+    // Use first directory, which is x:/OS2/.ssh, as a fall back like ssh.exe
+    // of OpenSSH does for root
+    return _vtstrSSHDir.front();
+}
+
+string KSCPClient::QuerySSHFilePath( const string &strName )
+{
+    struct stat statbuf;
+
+    for( vector< string >::const_iterator it = _vtstrSSHDir.begin();
+         it != _vtstrSSHDir.end(); ++it )
+    {
+        string strPath( *it + "/" + strName );
+
+        // Check if an existent regular file
+        if( stat( strPath.c_str(), &statbuf ) == 0 &&
+            S_ISREG( statbuf.st_mode ))
+            return strPath;
+    }
+
+    // fall back
+    return QuerySSHHome() + "/" + strName;
 }
 
 bool KSCPClient::CheckHostkey()
@@ -181,9 +269,9 @@ bool KSCPClient::CheckHostkey()
         goto exit_messagebox;
     }
 
-    QuerySSHHome( strKnownHostFile );
+    strKnownHostFile = QuerySSHFilePath("known_hosts");
+    cerr << "known_hosts file : " << strKnownHostFile << "\n";
 
-    strKnownHostFile += "/known_hosts";
     hostcount = libssh2_knownhost_readfile( nh, strKnownHostFile.c_str(),
                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH );
 
@@ -344,7 +432,7 @@ void KSCPClient::ReadDirWorker( void* arg )
     KStaticText kstStatus;
 
     _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
-    kstStatus.Centering();
+    kstStatus.MoveToCenter();
     kstStatus.SetWindowText("Reading directory...");
 
     cerr << "libssh2_sftp_opendir()!" << endl;
@@ -420,27 +508,12 @@ void KSCPClient::ReadDirWorker( void* arg )
             if( hptrIcon != _hptrDefaultFolder &&
                 attrs.flags & LIBSSH2_SFTP_ATTR_SIZE )
             {
-                static const char* pszUnit[] = {"B", "KB", "MB", "GB", "TB"};
-
-                unsigned usUnit = 0;
-                double   dSize = attrs.filesize;
-
-                for( usUnit = 0;
-                     usUnit < sizeof( pszUnit ) / sizeof( pszUnit[ 0 ]) - 1; )
-                {
-                    if( dSize > 1024.0 )
-                    {
-                        dSize /= 1024.0;
-                        usUnit++;
-                    }
-                    else
-                        break;
-                }
+                KSizeUnit ksz( attrs.filesize );
 
                 stringstream ss;
 
-                ss.precision( usUnit == 0 ? 0 : 2 );
-                ss << fixed << dSize << " " << pszUnit [ usUnit ];
+                ss.precision( ksz.unit().length() == 1 /* B */ ? 0 : 1 );
+                ss << fixed << ksz.size() << " " << ksz.unit();
                 pkr->pszSize = strdup( ss.str().c_str());
             }
 
@@ -542,7 +615,7 @@ exit_closedir :
 
 exit_dismiss :
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 }
 
 bool KSCPClient::ReadDir( const string& strDir, const string& strSelected )
@@ -566,7 +639,7 @@ int KSCPClient::ConnectEx( u_long to_addr, int port, int timeout )
     struct sockaddr_in sin;
     fd_set rset, wset;
     struct timeval tv;
-    int    rc;
+    int    rc = 0;
 
     flags = fcntl( _sock, F_GETFL );
     fcntl( _sock, F_SETFL, flags | O_NONBLOCK );
@@ -584,10 +657,7 @@ int KSCPClient::ConnectEx( u_long to_addr, int port, int timeout )
         }
     }
     else
-    {
-        rc = 0;
         goto exit_set_fl;
-    }
 
     /* Support positive timeout only */
     for(; !_fCanceled && timeout > 0 ; timeout -= 100 )
@@ -631,7 +701,7 @@ void KSCPClient::ConnectWorker( void* arg )
     KStaticText kstStatus;
 
     _kdlg.WindowFromID( IDT_DOWNLOAD_STATUS, kstStatus );
-    kstStatus.Centering();
+    kstStatus.MoveToCenter();
 
     _strAddress = psi->strAddress;
     _strCurDir  = psi->strDir;
@@ -717,25 +787,20 @@ void KSCPClient::ConnectWorker( void* arg )
     }
     else
     {
-        string strHome;
+        // Public key and private key may be located in different directories
+        string strPublicKey( QuerySSHFilePath( psi->iAuth == 1 ?
+                                               "id_rsa.pub" : "id_dsa.pub"));
+        string strPrivateKey( QuerySSHFilePath( psi->iAuth == 1 ?
+                                                "id_rsa" : "id_dsa"));
 
-        QuerySSHHome( strHome );
-
-        stringstream ssPublicKey;
-        stringstream ssPrivateKey;
-
-        ssPublicKey << strHome << "/id_"
-                    << ( psi->iAuth == 1 ? "rsa" : "dsa")
-                    << ".pub";
-
-        ssPrivateKey << strHome << "/id_"
-                     << ( psi->iAuth == 1 ? "rsa" : "dsa" );
+        cerr << "Public key file : " << strPublicKey << "\n";
+        cerr << "Private key file : " << strPrivateKey << "\n";
 
         /* Or by public key */
         if( libssh2_userauth_publickey_fromfile( _session,
                             psi->strUserName.c_str(),
-                            ssPublicKey.str().c_str(),
-                            ssPrivateKey.str().c_str(),
+                            strPublicKey.c_str(),
+                            strPrivateKey.c_str(),
                             psi->strPassword.c_str() ))
         {
             libssh2_session_last_error( _session, &errmsg, NULL, 0 );
@@ -765,7 +830,7 @@ void KSCPClient::ConnectWorker( void* arg )
     /* Tell libssh2 to wait up to MAX_WAIT_TIME for blocking functions */
     libssh2_session_set_timeout( _session, MAX_WAIT_TIME );
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _iResult = 0;
 
@@ -787,7 +852,7 @@ exit_close_socket :
 
     _kdlg.MessageBox( ssMsg.str(), _strAddress, MB_OK | MB_ERROR );
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _iResult = 1;
 }
@@ -1061,7 +1126,9 @@ void KSCPClient::Refresh()
     ReadDir( _strCurDir );
 }
 
-#define BUF_SIZE    ( 1024 * 4 )
+#define BUF_MIN_SIZE ( 1024 * 4 /* 4KB */ )
+#define BUF_MAX_SIZE ( 1024 * 1024 * 8 /* 8MB */ )
+#define TIME_LIMIT   ( 2 * 1000000LL /* 2s */ )
 
 int KSCPClient::Download( PKSCPRECORD pkr )
 {
@@ -1072,7 +1139,6 @@ int KSCPClient::Download( PKSCPRECORD pkr )
     struct stat       statbuf;
     FILE*             fp;
     string            strPath;
-    char*             buf;
     libssh2_uint64_t  size;
     stringstream      ssMsg;
     char*             errmsg;
@@ -1129,28 +1195,37 @@ int KSCPClient::Download( PKSCPRECORD pkr )
         goto exit_sftp_close;
     }
 
-    buf = new char[ BUF_SIZE ];
-
     if( pattr->filesize )
     {
+        vector< char > buf( BUF_MIN_SIZE );
+        long long elapsedTime = 0;
         int nRead, nWrite;
 
-        for( size = diffTime = 0; !_fCanceled; )
+        for( size = 0; !_fCanceled; )
         {
+            KSizeUnit ksz( size );
+
             ssMsg.str("");
-            ssMsg << size / 1024 << " KB of "
-                  << pattr->filesize / 1024 << " KB ("
+
+            ssMsg.precision( 1 );
+            ssMsg << fixed
+                  << ksz.size() << " " << ksz.unit() << " of ";
+
+            ksz.setSize( pattr->filesize );
+            ssMsg << ksz.size() << " " << ksz.unit() << " ("
                   << size * 100 / pattr->filesize << "%)";
 
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
             gettimeofday( &tv1, NULL );
             /* read in a loop until we block */
-            nRead = libssh2_sftp_read( sftp_handle, buf, BUF_SIZE );
+            nRead = libssh2_sftp_read( sftp_handle, &buf[ 0 ], buf.capacity());
             gettimeofday( &tv2, NULL );
 
-            diffTime += ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
-                        ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+            diffTime = ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
+                       ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+
+            elapsedTime += diffTime;
 
             if( nRead == 0 )
                 break;
@@ -1163,10 +1238,10 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                       << " : " << endl
                       << errmsg;
 
-                goto exit_delete;
+                goto exit_fclose;
             }
 
-            nWrite = fwrite( buf, 1, nRead, fp );
+            nWrite = fwrite( &buf[ 0 ], 1, nRead, fp );
             if( nWrite < nRead )
             {
                 ssMsg.str("");
@@ -1174,19 +1249,30 @@ int KSCPClient::Download( PKSCPRECORD pkr )
                       << " : " << endl
                       << strerror( errno );
 
-                goto exit_delete;
+                goto exit_fclose;
             }
 
             size += nWrite;
 
-            if( diffTime )
+            if( elapsedTime )
             {
+                KSizeUnit ksz( size * 1000000LL / elapsedTime );
+
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
-                      << " KB/s";
+
+                ssMsg.precision( 1 );
+                ssMsg << fixed << ksz.size() << " " << ksz.unit() << "/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED,
                                       ssMsg.str());
             }
+
+            // resize buffer according to the network speed
+            if( diffTime > TIME_LIMIT &&
+                buf.capacity() > BUF_MIN_SIZE )         // slow ?
+                buf.resize( buf.capacity() * 3 / 4 );   // then, decrease
+            else if( diffTime == 0 &&
+                     buf.capacity() < BUF_MAX_SIZE )    // fast ?
+                buf.resize( buf.capacity() * 3 / 2 );   // then, increase
         }
 
         if( size != pattr->filesize )
@@ -1195,15 +1281,13 @@ int KSCPClient::Download( PKSCPRECORD pkr )
             ssMsg << "Ooops... Error occurs while downloading :" << endl
                   << strSFTPPath;
 
-            goto exit_delete;
+            goto exit_fclose;
         }
     }
 
     rc = 0;
 
-exit_delete:
-    delete[] buf;
-
+exit_fclose:
     fclose( fp );
 
 exit_sftp_close :
@@ -1245,7 +1329,7 @@ void KSCPClient::RemoteWorker( void* arg )
         ( this->*rp->pCallback )( pkr );
     }
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _fBusy = false;
 }
@@ -1289,7 +1373,6 @@ int KSCPClient::Upload( const string& strName )
 
     FILE*        fp;
     off_t        size, fileSize;
-    char*        buf;
     stringstream ssMsg;
     char*        errmsg;
 
@@ -1358,44 +1441,49 @@ int KSCPClient::Upload( const string& strName )
         goto exit_fclose;
     }
 
-    buf = new char[ BUF_SIZE ];
-
     if( fileSize )
     {
+        vector< char > buf( BUF_MIN_SIZE );
+        long long   elapsedTime = 0;
         int         nRead, nWrite;
         const char* ptr;
 
-        for( size = diffTime = 0; !_fCanceled; )
+        for( size = 0; !_fCanceled; )
         {
+            KSizeUnit ksz( size );
+
             ssMsg.str("");
-            ssMsg << size / 1024 << " KB of "
-                  << fileSize / 1024 << " KB ("
+
+            ssMsg.precision( 1 );
+            ssMsg << fixed
+                  << ksz.size() << " " << ksz.unit() << " of ";
+
+            ksz.setSize( fileSize );
+            ssMsg << ksz.size() << " " << ksz.unit() << " ("
                   << size * 100 / fileSize << "%)";
 
             _kdlg.SetDlgItemText( IDT_DOWNLOAD_STATUS, ssMsg.str());
 
-            nRead = fread( buf, 1, BUF_SIZE, fp );
+            nRead = fread( &buf[ 0 ], 1, buf.capacity(), fp );
             if( nRead == 0 && feof( fp ))
                 break;
-            else if( nRead < BUF_SIZE && ferror( fp ))
+            else if( nRead < static_cast< int >( buf.capacity()) &&
+                     ferror( fp ))
             {
                 ssMsg.str("");
                 ssMsg << "Cannot read data from " << strName
                       << " :" << endl
                       << strerror( errno );
 
-                goto exit_delete;
+                goto exit_close;
             }
 
-            for( ptr = buf; nRead; )
+            gettimeofday( &tv1, NULL );
+
+            for( ptr = &buf[ 0 ]; nRead; )
             {
-                gettimeofday( &tv1, NULL );
                 /* write data in a loop until we block */
                 nWrite = libssh2_sftp_write( sftp_handle, ptr, nRead );
-                gettimeofday( &tv2, NULL );
-
-                diffTime += ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
-                            ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
 
                 if( nWrite < 0 )
                 {
@@ -1406,7 +1494,7 @@ int KSCPClient::Upload( const string& strName )
                           << " :" << endl
                           << errmsg;
 
-                    goto exit_delete;
+                    goto exit_close;
                 }
 
                 ptr   += nWrite;
@@ -1414,13 +1502,31 @@ int KSCPClient::Upload( const string& strName )
                 size  += nWrite;
             }
 
-            if( diffTime )
+            gettimeofday( &tv2, NULL );
+
+            diffTime = ( tv2.tv_sec * 1000000LL + tv2.tv_usec ) -
+                       ( tv1.tv_sec * 1000000LL + tv2.tv_usec );
+
+            elapsedTime += diffTime;
+
+            if( elapsedTime )
             {
+                KSizeUnit ksz( size * 1000000LL / elapsedTime );
+
                 ssMsg.str("");
-                ssMsg << ( size * 1000000LL / 1024 ) / diffTime
-                      << " KB/s";
+
+                ssMsg.precision( 1 );
+                ssMsg << fixed << ksz.size() << " " << ksz.unit() << "/s";
                 _kdlg.SetDlgItemText( IDT_DOWNLOAD_SPEED, ssMsg.str());
             }
+
+            // resize buffer according to the network speed
+            if( diffTime > TIME_LIMIT &&
+                buf.capacity() > BUF_MIN_SIZE )         // slow ?
+                buf.resize( buf.capacity() * 3 / 4 );   // then, decrease
+            else if( diffTime == 0 &&
+                     buf.capacity() < BUF_MAX_SIZE )    // fast ?
+                buf.resize( buf.capacity() * 3 / 2 );   // then, increase
         }
 
         if( size != fileSize )
@@ -1429,15 +1535,13 @@ int KSCPClient::Upload( const string& strName )
             ssMsg << "Ooops... Error occurs while uploading :" << endl
                   << strName;
 
-            goto exit_delete;
+            goto exit_close;
         }
     }
 
     rc = 0;
 
-exit_delete :
-    delete[] buf;
-
+exit_close :
     libssh2_sftp_close( sftp_handle );
 
 exit_fclose :
@@ -1471,7 +1575,7 @@ void KSCPClient::LocalWorker( void* arg )
         (this->*lp->pCallback)( vsList[ i ]);
     }
 
-    _kdlg.DismissDlg( DID_OK );
+    _kdlg.Dismiss( DID_OK );
 
     _fBusy = false;
 }

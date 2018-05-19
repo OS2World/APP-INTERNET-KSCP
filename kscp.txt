@@ -20,7 +20,7 @@
     included in listings? yes
 
 Operating System/Version:
- Additional requirements: kLIBC v0.6.5,
-                          OpenSSL 0.9.8r OS2-KNIX(http://bauxite.sakura.ne.jp/software/os2/#openssl)
+ Additional requirements: kLIBC v0.6.6,
+                          OpenSSL 1.0.0t OS2-KNIX(http://bauxite.sakura.ne.jp/software/os2/#openssl)
 
                 Replaces: (none)
