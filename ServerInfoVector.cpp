@@ -39,6 +39,8 @@
 #define INCL_WIN
 #include <os2.h>
 
+#include <string.h>
+
 #include <sstream>
 
 #include "kscp.h"
