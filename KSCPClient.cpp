@@ -40,6 +40,9 @@
 #define INCL_DOS
 #include <os2.h>
 
+#undef  FIELDOFFSET
+#define FIELDOFFSET(t,f)  ((ULONG)&(((t *)0)->f))
+
 #include <iostream>
 
 #include <ctime>
