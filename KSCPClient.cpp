@@ -497,6 +497,28 @@ void KSCPClient::ReadDirWorker( void* arg )
             pkr = _kcnr.AllocRecord( 1 );
 
             if(( attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS ) &&
+               LIBSSH2_SFTP_S_ISLNK( attrs.permissions ))
+            {
+                LIBSSH2_SFTP_ATTRIBUTES attribs;
+
+                if( libssh2_sftp_stat( _sftp_session, (strDir + mem).c_str(),
+                                       &attribs ) == 0 &&
+                    attribs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)
+                {
+                    if( LIBSSH2_SFTP_S_ISREG( attribs.permissions ))
+                    {
+                        attrs.permissions &= ~LIBSSH2_SFTP_S_IFLNK;
+                        attrs.permissions |= LIBSSH2_SFTP_S_IFREG;
+                    }
+                    else if( LIBSSH2_SFTP_S_ISDIR( attribs.permissions ))
+                    {
+                        attrs.permissions &= ~LIBSSH2_SFTP_S_IFLNK;
+                        attrs.permissions |= LIBSSH2_SFTP_S_IFDIR;
+                    }
+                }
+            }
+
+            if(( attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS ) &&
                LIBSSH2_SFTP_S_ISDIR( attrs.permissions ))
                 hptrIcon = _hptrDefaultFolder;
 
