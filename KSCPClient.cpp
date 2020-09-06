@@ -277,6 +277,7 @@ bool KSCPClient::CheckHostkey()
 
     hostcount = libssh2_knownhost_readfile( nh, strKnownHostFile.c_str(),
                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH );
+    cerr << "host count : " << hostcount << "\n";
 
     check = libssh2_knownhost_check( nh, _strAddress.c_str(),
                                      hostkey, hostkeylen,
