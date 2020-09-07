@@ -1986,7 +1986,7 @@ MRESULT KSCPClient::OnSize( SHORT scxOld, SHORT scyOld,
 MRESULT KSCPClient::OnTranslateAccel( PQMSG pqmsg )
 {
     if( _fCnrEditing )
-        return false;
+        return MRFROMLONG( false );
 
     return KWindow::OnTranslateAccel( pqmsg );
 }
